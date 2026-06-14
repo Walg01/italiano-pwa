@@ -1143,7 +1143,13 @@ function parseTSV(text) {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    const cols = line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
+    const cols = line.split('\t').map(c => {
+      c = c.trim();
+      if (c.length > 1 && c.startsWith('"') && c.endsWith('"')) {
+        c = c.slice(1, -1).replace(/""/g, '"');
+      }
+      return c;
+    });
     const obj = {};
     headers.forEach((h, idx) => { obj[h] = cols[idx] || ''; });
     rows.push(obj);
