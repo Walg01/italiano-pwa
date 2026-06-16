@@ -252,6 +252,35 @@ body {
 .historial-header { padding: 56px 20px 16px; }
 .historial-title { font-size:22px; font-weight:800; letter-spacing:-.03em; }
 .historial-sub   { font-size:13px; color:var(--text-2); margin-top:4px; }
+
+/* ─── Historial KPIs ─── */
+.hist-kpi-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.hist-kpi-card { padding:16px 18px 18px; display:flex; flex-direction:column; }
+.hist-kpi-label { font-size:11px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+.hist-kpi-value { font-size:32px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+.hist-kpi-value.streak { color:var(--text); }
+.hist-kpi-value.ratio  { color:var(--green-glow); }
+.hist-streak-icon { font-size:18px; font-weight:400; margin-right:3px; vertical-align:middle; }
+.hist-kpi-sub   { font-size:11px; color:var(--text-3); margin-top:5px; }
+.hist-ratio-bar-track { height:6px; background:var(--border); border-radius:3px; margin-top:12px; overflow:hidden; }
+.hist-ratio-bar-fill  { height:100%; background:var(--green-glow); border-radius:3px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+
+/* ─── Historial bar chart ─── */
+.hist-chart      { }
+.hist-nums-row   { display:flex; gap:6px; margin-bottom:3px; height:14px; }
+.hist-bars-area  { display:flex; align-items:flex-end; gap:6px; height:64px; border-bottom:1px solid var(--border); }
+.hist-lbls-row   { display:flex; gap:6px; margin-top:6px; }
+.hist-bar        { flex:1; border-radius:3px 3px 0 0; transition:height .3s cubic-bezier(.4,0,.2,1); }
+.hist-bar.has-data { background:var(--green-glow); }
+.hist-bar.no-data  { background:var(--border); min-height:2px; }
+.hist-bar-num    { flex:1; text-align:center; font-size:9px; color:var(--text-2); font-weight:600; line-height:14px; }
+.hist-bar-lbl    { flex:1; text-align:center; font-size:10px; color:var(--text-3); font-weight:500; white-space:nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation:none !important; opacity:1; transform:none; }
+  .hist-bar { transition:none; }
+  .hist-ratio-bar-fill { transition:none; }
+}
 .balance-card { padding: 20px; }
 .balance-row  { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .balance-label { font-size:13px; color:var(--text-2); }
@@ -653,40 +682,33 @@ body {
     <div class="scroll-area">
       <div class="historial-header fade-up">
         <div class="historial-title">Historial</div>
-        <div class="historial-sub" id="hist-subtitle">Semana actual</div>
+        <div class="historial-sub">Últimos 7 días</div>
       </div>
 
+      <!-- KPIs -->
       <div class="section fade-up">
-        <div class="card balance-card">
-          <div class="balance-row">
-            <span class="balance-label">Horas esta semana</span>
-            <span class="balance-value" id="hist-horas">—</span>
+        <div class="hist-kpi-row">
+          <div class="card hist-kpi-card">
+            <div class="hist-kpi-label">Racha</div>
+            <div class="hist-kpi-value streak" id="hist-streak">—</div>
+            <div class="hist-kpi-sub">días seguidos</div>
           </div>
-          <div class="balance-row" style="margin-bottom:0">
-            <span class="balance-label">Balance crédito/deuda</span>
-            <span class="balance-value" id="hist-balance">—</span>
-          </div>
-          <div class="progress-track" style="margin-top:14px">
-            <div class="progress-fill" id="hist-bar" style="width:0%"></div>
-          </div>
-          <div class="progress-labels" style="margin-top:4px">
-            <span id="hist-pct">0%</span>
-            <span id="hist-meta">meta: 12h</span>
+          <div class="card hist-kpi-card">
+            <div class="hist-kpi-label">Aciertos</div>
+            <div class="hist-kpi-value ratio" id="hist-ratio-num">—</div>
+            <div class="hist-kpi-sub">últimos 7 días</div>
+            <div class="hist-ratio-bar-track">
+              <div class="hist-ratio-bar-fill" id="hist-ratio-bar" style="width:0%"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="section-title fade-up">Log semanal</div>
+      <!-- Gráfica de barras -->
+      <div class="section-title fade-up">Tarjetas por día</div>
       <div class="section fade-up">
-        <div class="card" style="padding:0;overflow:auto">
-          <table class="hours-table" id="hours-table">
-            <thead><tr>
-              <th>Día</th><th>Anki</th><th>Sesión</th><th>Gemini</th><th>Total</th>
-            </tr></thead>
-            <tbody id="hours-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3)">Cargando…</td></tr>
-            </tbody>
-          </table>
+        <div class="card" style="padding:20px 16px 16px">
+          <div id="hist-bar-chart"></div>
         </div>
       </div>
       <div style="height:8px"></div>
@@ -1993,6 +2015,126 @@ async function endSession(reason = 'queue') {
   const taEl = document.getElementById('srs-briefing-text');
   if (taEl) taEl.value = briefingText;
   window._currentBriefing = briefingText;
+  saveSessionLog(total, loSe, noLoSe);
+}
+
+// ════════════════════════════════════════════════════════════════
+// SESSION LOG — localStorage
+// ════════════════════════════════════════════════════════════════
+function loadSessionLog() {
+  try {
+    return JSON.parse(localStorage.getItem('italiano_session_log') || '[]');
+  } catch { return []; }
+}
+
+function saveSessionLog(reviewed, passed, failed) {
+  if (reviewed < 1) return;
+  const today = todayISO();
+  let log = loadSessionLog();
+  const idx = log.findIndex(e => e.date === today);
+  if (idx >= 0) {
+    log[idx].reviewed += reviewed;
+    log[idx].passed   += passed;
+    log[idx].failed   += failed;
+  } else {
+    log.push({ date: today, reviewed, passed, failed });
+  }
+  if (log.length > 30) log = log.slice(-30);
+  localStorage.setItem('italiano_session_log', JSON.stringify(log));
+}
+
+// ════════════════════════════════════════════════════════════════
+// HISTORIAL — cálculo y render
+// ════════════════════════════════════════════════════════════════
+function calcStreak(log) {
+  let streak = 0;
+  const today = todayISO();
+  for (let i = 0; i < 365; i++) {
+    const d = dateAddDays(today, -i);
+    if (log.find(e => e.date === d && e.reviewed >= 1)) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function calcRatio7d(log) {
+  const today = todayISO();
+  let totalReviewed = 0, totalPassed = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = dateAddDays(today, -i);
+    const entry = log.find(e => e.date === d);
+    if (entry) { totalReviewed += entry.reviewed; totalPassed += entry.passed; }
+  }
+  if (totalReviewed === 0) return null;
+  return Math.round((totalPassed / totalReviewed) * 100);
+}
+
+function buildBarChart(log) {
+  const today = todayISO();
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(dateAddDays(today, -i));
+
+  const counts = days.map(d => (log.find(e => e.date === d) || { reviewed: 0 }).reviewed);
+  const maxVal = Math.max(...counts, 1);
+
+  const DAY_LABELS = ['dom','lun','mar','mié','jue','vie','sáb'];
+
+  const chart = document.createElement('div');
+  chart.className = 'hist-chart';
+
+  const numsRow  = document.createElement('div'); numsRow.className  = 'hist-nums-row';
+  const barsArea = document.createElement('div'); barsArea.className = 'hist-bars-area';
+  const lblsRow  = document.createElement('div'); lblsRow.className  = 'hist-lbls-row';
+
+  days.forEach((d, i) => {
+    const count = counts[i];
+    const heightPct = count > 0 ? Math.max((count / maxVal) * 100, 8) : 2;
+    const dayName = DAY_LABELS[new Date(d + 'T12:00:00').getDay()];
+
+    const numEl = document.createElement('div');
+    numEl.className = 'hist-bar-num';
+    numEl.textContent = count > 0 ? count : '';
+    numsRow.appendChild(numEl);
+
+    const bar = document.createElement('div');
+    bar.className = 'hist-bar ' + (count > 0 ? 'has-data' : 'no-data');
+    bar.style.height = heightPct + '%';
+    barsArea.appendChild(bar);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'hist-bar-lbl';
+    lbl.textContent = dayName;
+    lblsRow.appendChild(lbl);
+  });
+
+  chart.append(numsRow, barsArea, lblsRow);
+  return chart;
+}
+
+function renderHistorial() {
+  const log    = loadSessionLog();
+  const streak = calcStreak(log);
+  const ratio  = calcRatio7d(log);
+
+  const streakEl = document.getElementById('hist-streak');
+  if (streakEl) {
+    if (streak > 0) {
+      streakEl.innerHTML = '<span class="hist-streak-icon">🔥</span>' + streak;
+    } else {
+      streakEl.textContent = '0';
+    }
+  }
+
+  const ratioNumEl = document.getElementById('hist-ratio-num');
+  const ratioBarEl = document.getElementById('hist-ratio-bar');
+  if (ratioNumEl) ratioNumEl.textContent = ratio !== null ? ratio + '%' : '—';
+  if (ratioBarEl) ratioBarEl.style.width  = ratio !== null ? ratio + '%' : '0%';
+
+  const chartEl = document.getElementById('hist-bar-chart');
+  if (chartEl) { chartEl.innerHTML = ''; chartEl.appendChild(buildBarChart(log)); }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2078,43 +2220,6 @@ function renderErrors() {
     </div>`).join('');
 }
 
-function renderHistorial() {
-  const hd = S.parsed.horas || {};
-  const total  = hd.total  || 0;
-  const meta   = hd.meta   || 12;
-  const bal    = hd.balance || 0;
-  const pct    = Math.min(total / meta * 100, 100).toFixed(0);
-  const hours  = Math.floor(total);
-  const mins   = Math.round((total - hours) * 60);
-
-  setText('hist-horas', `${hours}h ${String(mins).padStart(2,'0')}m`);
-  const histBal = document.getElementById('hist-balance');
-  histBal.textContent = (bal >= 0 ? '+' : '') + bal.toFixed(1) + 'h';
-  histBal.className = 'balance-value ' + (bal >= 0 ? 'credit' : 'debt');
-  setText('hist-pct', pct + '%');
-  setText('hist-meta', `meta: ${meta}h`);
-  setTimeout(() => { document.getElementById('hist-bar').style.width = pct + '%'; }, 400);
-
-  const today = new Date().toLocaleDateString('es-AR', {weekday:'short'}).slice(0,3).toLowerCase();
-  const dias = ['lun','mar','mié','jue','vie','sáb','dom'];
-
-  const tbody = document.getElementById('hours-tbody');
-  const rows  = hd.rows || [];
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3)">Sin datos de horas esta semana.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(r => {
-    const isToday = dias.some(d => r.dia.toLowerCase().startsWith(d) && today.startsWith(d));
-    return `<tr class="${isToday ? 'today-row' : ''}">
-      <td class="day-label">${r.dia}</td>
-      <td>${r.anki}</td>
-      <td>${r.sesion}</td>
-      <td>${r.gemini}</td>
-      <td class="total-cell">${r.total}</td>
-    </tr>`;
-  }).join('');
-}
 
 function renderConfigTab() {
   const cfg = S.config || {};
@@ -2417,6 +2522,7 @@ function switchTab(tab, btn) {
   if (tab === 'config')     { renderConfigTab(); renderImportSection(); }
   if (tab === 'sesion')     regeneratePrompt();
   if (tab === 'flashcards') renderFlashcardsHome();
+  if (tab === 'historial')  renderHistorial();
 }
 
 function showLoading(msg) {
