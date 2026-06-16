@@ -276,8 +276,42 @@ body {
 .hist-bar-num    { flex:1; text-align:center; font-size:9px; color:var(--text-2); font-weight:600; line-height:14px; }
 .hist-bar-lbl    { flex:1; text-align:center; font-size:10px; color:var(--text-3); font-weight:500; white-space:nowrap; }
 
+/* ─── Rutina del día ─── */
+.rutina-header { display:flex; align-items:center; justify-content:space-between; padding:56px 20px 16px; }
+.rutina-back   { font-size:13px; font-weight:600; color:var(--text-2); background:none; border:none; cursor:pointer; padding:4px 0; -webkit-tap-highlight-color:transparent; }
+.rutina-title  { font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--text); }
+.rutina-step   { border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; transition:border-color 200ms, opacity 200ms, background 200ms; background:var(--surface); }
+.rutina-step.active { border-color:var(--green); background:rgba(0,135,90,.05); }
+.rutina-step.done   { opacity:.5; }
+.rutina-step.future { opacity:.35; }
+.rutina-step-header { display:flex; align-items:center; gap:12px; }
+.rutina-step-num    { width:24px; height:24px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-2); flex-shrink:0; }
+.rutina-step.done .rutina-step-num { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
+.rutina-step-title  { font-size:15px; font-weight:700; color:var(--text); }
+.rutina-step-sub    { font-size:11px; color:var(--text-2); margin-top:1px; }
+.rutina-step-body   { margin-top:14px; }
+.rutina-timer       { font-size:40px; font-weight:800; letter-spacing:-.03em; color:var(--text); line-height:1; }
+.rutina-timer.done  { color:var(--text-3); }
+.rutina-timer-sub   { font-size:12px; color:var(--text-2); margin-top:4px; font-weight:500; }
+.rutina-briefing    { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; font-family:'SF Mono','Cascadia Code',monospace; font-size:11px; color:var(--text-2); max-height:120px; overflow-y:auto; resize:none; outline:none; line-height:1.5; box-sizing:border-box; }
+.rutina-copy-btn    { width:100%; padding:12px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:all 150ms; -webkit-tap-highlight-color:transparent; }
+.rutina-copy-btn.copied { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
+.rutina-done-btn    { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; margin-top:12px; -webkit-tap-highlight-color:transparent; }
+.rutina-start-btn   { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.rutina-running-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(0,135,90,.15); border:1px solid rgba(0,192,122,.2); color:var(--green-glow); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-top:10px; }
+.rutina-pulse-dot   { width:6px; height:6px; border-radius:50%; background:var(--green-glow); display:inline-block; flex-shrink:0; animation:rutina-pulse 1.6s ease-in-out infinite; }
+@keyframes rutina-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+.rutina-completion  { padding:32px 20px 32px; text-align:center; }
+.rutina-completion-title { font-size:13px; font-weight:500; color:var(--text-2); margin-bottom:28px; }
+.rutina-completion-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:32px; }
+.rutina-metric-val  { font-size:28px; font-weight:800; color:var(--text); letter-spacing:-.03em; line-height:1; }
+.rutina-metric-val.green { color:var(--green-glow); }
+.rutina-metric-lbl  { font-size:11px; color:var(--text-2); margin-top:4px; font-weight:500; }
+.rutina-btn-volver  { width:100%; padding:14px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
 @media (prefers-reduced-motion: reduce) {
   .fade-up { animation:none !important; opacity:1; transform:none; }
+  .rutina-pulse-dot { animation:none; }
   .hist-bar { transition:none; }
   .hist-ratio-bar-fill { transition:none; }
 }
@@ -451,6 +485,7 @@ body {
   <!-- ── TAB: INICIO (Estado) ── -->
   <div id="tab-inicio" class="tab-content">
     <div class="scroll-area">
+      <div id="inicio-content">
       <header class="header fade-up">
         <div>
           <div class="greeting-label" id="greeting-label">Buongiorno</div>
@@ -554,7 +589,23 @@ body {
           <div style="font-size:13px;color:var(--text);line-height:1.5" id="next-hito">Cargando…</div>
         </div>
       </div>
+      <div class="section fade-up">
+        <button class="rutina-start-btn" onclick="showRutinaView()">Iniciar rutina →</button>
+      </div>
       <div style="height:8px"></div>
+      </div><!-- /inicio-content -->
+
+      <div id="rutina-view" style="display:none">
+        <div class="rutina-header">
+          <button class="rutina-back" onclick="hideRutinaView()">← Inicio</button>
+          <div class="rutina-title">Rutina del día</div>
+        </div>
+        <div class="section" style="padding-top:0">
+          <div id="rutina-steps"></div>
+        </div>
+        <div id="rutina-completion" class="rutina-completion" style="display:none"></div>
+        <div style="height:8px"></div>
+      </div><!-- /rutina-view -->
     </div>
   </div>
 
@@ -2016,6 +2067,7 @@ async function endSession(reason = 'queue') {
   if (taEl) taEl.value = briefingText;
   window._currentBriefing = briefingText;
   saveSessionLog(total, loSe, noLoSe);
+  completeRutinaStep(0, briefingText);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2135,6 +2187,261 @@ function renderHistorial() {
 
   const chartEl = document.getElementById('hist-bar-chart');
   if (chartEl) { chartEl.innerHTML = ''; chartEl.appendChild(buildBarChart(log)); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// RUTINA DEL DÍA
+// ════════════════════════════════════════════════════════════════
+
+let _rutinaTimerInterval = null;
+let _rutinaViewActive    = false;
+
+const RUTINA_STEPS = [
+  { title: 'PWA SRS',          sub: '20 min · Mr. Salas' },
+  { title: 'Ejercicios Claude', sub: 'Diario + gramática' },
+  { title: 'Gemini Live',       sub: '15-20 min · conversación oral' },
+  { title: 'Diario',            sub: '15 min · producción escrita' },
+];
+
+// Tasks 1.1 + 1.2 — state persistence
+function _rutinaKey() {
+  const d = new Date();
+  return 'rutina_' + d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function loadRutina() {
+  try {
+    const raw = localStorage.getItem(_rutinaKey());
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (Array.isArray(s.steps) && s.steps.length === 4) return s;
+    }
+  } catch(e) {}
+  return { steps: [false,false,false,false], timerStart: null, briefing: null };
+}
+
+function saveRutina(state) {
+  try { localStorage.setItem(_rutinaKey(), JSON.stringify(state)); } catch(e) {}
+}
+
+// Task 1.3 — mark step complete
+function completeRutinaStep(stepIndex, briefing) {
+  const state = loadRutina();
+  if (stepIndex === 0 && state.timerStart === null) return; // no-op
+  state.steps[stepIndex] = true;
+  if (briefing !== undefined && briefing !== null) state.briefing = briefing;
+  saveRutina(state);
+}
+
+// Tasks 5.1 + 5.2 — show/hide rutina view
+function showRutinaView() {
+  _rutinaViewActive = true;
+  const ic = document.getElementById('inicio-content');
+  const rv = document.getElementById('rutina-view');
+  if (ic) ic.style.display = 'none';
+  if (rv) rv.style.display = 'block';
+  renderRutina();
+  if (_rutinaTimerInterval) clearInterval(_rutinaTimerInterval);
+  const state = loadRutina();
+  if (!state.steps[0] && state.timerStart !== null) {
+    _rutinaTimerInterval = setInterval(renderRutinaTimer, 1000);
+  }
+}
+
+function hideRutinaView() {
+  _rutinaViewActive = false;
+  if (_rutinaTimerInterval) { clearInterval(_rutinaTimerInterval); _rutinaTimerInterval = null; }
+  const ic = document.getElementById('inicio-content');
+  const rv = document.getElementById('rutina-view');
+  if (rv) rv.style.display = 'none';
+  if (ic) ic.style.display = 'block';
+}
+
+// Task 5.8 — update timer display each second
+function renderRutinaTimer() {
+  if (!_rutinaViewActive) {
+    clearInterval(_rutinaTimerInterval);
+    _rutinaTimerInterval = null;
+    return;
+  }
+  const state = loadRutina();
+  if (state.steps[0] || state.timerStart === null) {
+    clearInterval(_rutinaTimerInterval);
+    _rutinaTimerInterval = null;
+    return;
+  }
+  const el = document.getElementById('rutina-timer-display');
+  if (!el) return;
+  const rem = Math.max(0, 1200 - Math.floor((Date.now() - state.timerStart) / 1000));
+  const mm = String(Math.floor(rem / 60)).padStart(2,'0');
+  const ss = String(rem % 60).padStart(2,'0');
+  el.textContent = mm + ':' + ss;
+  if (rem === 0) el.classList.add('done');
+}
+
+// Task 5.7 — start timer, navigate to flashcards
+function startRutinaTimer() {
+  const state = loadRutina();
+  state.timerStart = Date.now();
+  saveRutina(state);
+  // navigate to flashcards
+  const fcBtn = document.querySelector('.nav-item[onclick*="flashcards"]');
+  if (fcBtn) fcBtn.click();
+  // start interval
+  if (_rutinaTimerInterval) clearInterval(_rutinaTimerInterval);
+  _rutinaTimerInterval = setInterval(renderRutinaTimer, 1000);
+}
+
+// Task 5.9 — mark step done + re-render
+function markRutinaStepDone(stepIndex) {
+  completeRutinaStep(stepIndex);
+  renderRutina();
+}
+
+// Task 6.4 — copy briefing
+function copyRutinaBriefing() {
+  const state = loadRutina();
+  if (!state.briefing) return;
+  navigator.clipboard.writeText(state.briefing).then(() => {
+    const btn = document.getElementById('rutina-copy-btn');
+    if (!btn) return;
+    btn.textContent = '¡Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// Task 5.10 — completion screen
+function renderRutinaCompletion() {
+  const compEl = document.getElementById('rutina-completion');
+  const stepsEl = document.getElementById('rutina-steps');
+  if (!compEl || !stepsEl) return;
+  stepsEl.style.display = 'none';
+  compEl.style.display = 'block';
+
+  // read today's session log for metrics
+  const log = loadSessionLog ? loadSessionLog() : [];
+  const today = new Date().toISOString().slice(0,10);
+  const todayEntries = log.filter(e => e.date && e.date.slice(0,10) === today);
+
+  let totalCards = 0, totalGood = 0;
+  todayEntries.forEach(e => {
+    totalCards += (e.total || 0);
+    totalGood  += (e.loSe  || 0);
+  });
+  const ratio = totalCards > 0 ? Math.round((totalGood / totalCards) * 100) : 0;
+
+  // compute streak from full log
+  let streak = 0;
+  const seen = new Set(log.map(e => e.date && e.date.slice(0,10)).filter(Boolean));
+  const cur = new Date();
+  while (true) {
+    const k = cur.toISOString().slice(0,10);
+    if (!seen.has(k)) break;
+    streak++;
+    cur.setDate(cur.getDate() - 1);
+  }
+
+  compEl.innerHTML = `
+    <div class="rutina-completion-title">Rutina completada</div>
+    <div class="rutina-completion-metrics">
+      <div>
+        <div class="rutina-metric-val green">🔥${streak}</div>
+        <div class="rutina-metric-lbl">días seguidos</div>
+      </div>
+      <div>
+        <div class="rutina-metric-val">${totalCards}</div>
+        <div class="rutina-metric-lbl">tarjetas hoy</div>
+      </div>
+      <div>
+        <div class="rutina-metric-val green">${ratio}%</div>
+        <div class="rutina-metric-lbl">aciertos</div>
+      </div>
+    </div>
+    <button class="rutina-btn-volver" onclick="hideRutinaView()">Volver al inicio</button>
+  `;
+}
+
+// Tasks 5.3-5.6 — main render
+function renderRutina() {
+  if (!_rutinaViewActive) return;
+  const state  = loadRutina();
+  const stepsEl  = document.getElementById('rutina-steps');
+  const compEl   = document.getElementById('rutina-completion');
+  if (!stepsEl || !compEl) return;
+
+  const allDone = state.steps.every(Boolean);
+  if (allDone) { renderRutinaCompletion(); return; }
+
+  compEl.style.display = 'none';
+  stepsEl.style.display = 'block';
+
+  const activeIdx = state.steps.indexOf(false);
+
+  let html = '';
+  RUTINA_STEPS.forEach((step, i) => {
+    const done   = state.steps[i];
+    const active = i === activeIdx;
+    const cls    = done ? 'done' : active ? 'active' : 'future';
+    const numHtml = done
+      ? `<div class="rutina-step-num">✓</div>`
+      : `<div class="rutina-step-num">${i+1}</div>`;
+
+    let bodyHtml = '';
+    if (active) {
+      if (i === 0) {
+        // Task 5.4 — SRS step
+        const hasTimer = state.timerStart !== null;
+        const rem = hasTimer ? Math.max(0, 1200 - Math.floor((Date.now() - state.timerStart) / 1000)) : 1200;
+        const mm  = String(Math.floor(rem / 60)).padStart(2,'0');
+        const ss  = String(rem % 60).padStart(2,'0');
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <div class="rutina-timer${rem===0?' done':''}" id="rutina-timer-display">${mm}:${ss}</div>
+            <div class="rutina-timer-sub">tiempo restante</div>
+            ${hasTimer
+              ? `<div class="rutina-running-badge"><span class="rutina-pulse-dot"></span>En curso…</div>`
+              : `<button class="rutina-start-btn" style="margin-top:14px" onclick="startRutinaTimer()">Iniciar → Flashcards</button>`
+            }
+          </div>`;
+      } else if (i === 1) {
+        // Task 5.5 — briefing step
+        const briefing = state.briefing || '(Completa el SRS primero para ver el resumen aquí)';
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <textarea class="rutina-briefing" readonly>${briefing}</textarea>
+            <button class="rutina-copy-btn" id="rutina-copy-btn" onclick="copyRutinaBriefing()">Copiar</button>
+            <button class="rutina-done-btn" onclick="markRutinaStepDone(${i})">Listo ✓</button>
+          </div>`;
+      } else {
+        // Tasks 5.6 — steps 2-3
+        const desc = i === 2
+          ? 'Abre Gemini Live y conversa 15-20 min en italiano.'
+          : 'Escribe tu diario forzado con las palabras de hoy.';
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.5">${desc}</div>
+            <button class="rutina-done-btn" onclick="markRutinaStepDone(${i})">Listo ✓</button>
+          </div>`;
+      }
+    }
+
+    html += `
+      <div class="rutina-step ${cls}">
+        <div class="rutina-step-header">
+          ${numHtml}
+          <div>
+            <div class="rutina-step-title">${step.title}</div>
+            <div class="rutina-step-sub">${step.sub}</div>
+          </div>
+        </div>
+        ${bodyHtml}
+      </div>`;
+  });
+
+  stepsEl.innerHTML = html;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2518,7 +2825,7 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = 'block';
-  if (tab === 'inicio')     renderChecklist(loadChecklist());
+  if (tab === 'inicio')     { renderChecklist(loadChecklist()); if (_rutinaViewActive) renderRutina(); }
   if (tab === 'config')     { renderConfigTab(); renderImportSection(); }
   if (tab === 'sesion')     regeneratePrompt();
   if (tab === 'flashcards') renderFlashcardsHome();
