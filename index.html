@@ -125,6 +125,18 @@ body {
 .error-item-text { font-size:13px; color:var(--text); line-height:1.4; }
 .error-item-freq { font-size:11px; color:var(--text-3); margin-top:2px; }
 
+/* ─── Curriculum panel ─── */
+.curric-item { padding: 16px 20px; }
+.curric-item + .curric-item { border-top: 1px solid var(--border); }
+.curric-secondary { opacity: 0.72; }
+.curric-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.curric-label { font-size:11px; font-weight:600; color:var(--green-glow); text-transform:uppercase; letter-spacing:.08em; }
+.curric-secondary .curric-label { color:var(--text-2); }
+.curric-warn { font-size:10px; font-weight:700; color:var(--terra-glow); letter-spacing:.04em; }
+.curric-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
+.curric-meta { font-size:11px; color:var(--text-3); margin-bottom:12px; }
+.curric-yt-btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--blue); text-decoration:none; padding:6px 12px; background:rgba(56,139,253,.1); border:1px solid rgba(56,139,253,.2); border-radius:var(--radius-xs); }
+
 /* ─── CTA Button ─── */
 .cta-wrap { padding: 4px 16px 8px; }
 .cta-btn {
@@ -582,6 +594,14 @@ body {
         </div>
       </div>
 
+      <!-- Curriculum: tema activo -->
+      <div id="curriculum-section" style="display:none">
+        <div class="section-title fade-up">Tema gramatical activo</div>
+        <div class="section fade-up">
+          <div class="card" id="curriculum-panel"></div>
+        </div>
+      </div>
+
       <!-- Next milestone -->
       <div class="section-title fade-up">Próximo hito</div>
       <div class="section fade-up">
@@ -838,6 +858,8 @@ const S = {
   formOpen: false,
   srsReady: false,    // true after deck import completes
   ankiStateSha: null, // SHA of anki-state.json in GitHub
+  curriculumCatalog:  null,
+  curriculumProgress: null,
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -856,7 +878,7 @@ async function boot() {
   }
   S.config = cfg;
   showScreen('app');
-  await Promise.all([initSRSDatabase(), loadAllFiles()]);
+  await Promise.all([initSRSDatabase(), loadAllFiles(), loadCurriculumFiles()]);
   runSM2Tests();
   renderAll();
   renderChecklist(loadChecklist());
@@ -2447,11 +2469,70 @@ function renderRutina() {
 // ════════════════════════════════════════════════════════════════
 // RENDER
 // ════════════════════════════════════════════════════════════════
+// CURRICULUM
+// ════════════════════════════════════════════════════════════════
+async function loadCurriculumFiles() {
+  const BASE = 'https://raw.githubusercontent.com/walg01/italiano-pwa/main';
+  try {
+    const [catRes, progRes] = await Promise.all([
+      fetch(BASE + '/curriculum-catalog.json'),
+      fetch(BASE + '/curriculum-progress.json')
+    ]);
+    S.curriculumCatalog  = catRes.ok  ? await catRes.json()  : null;
+    S.curriculumProgress = progRes.ok ? await progRes.json() : null;
+  } catch {
+    S.curriculumCatalog  = null;
+    S.curriculumProgress = null;
+  }
+}
+
+function renderCurriculumPanel() {
+  const panel = document.getElementById('curriculum-panel');
+  const wrap  = document.getElementById('curriculum-section');
+  if (!panel || !wrap) return;
+
+  const catalog  = S.curriculumCatalog;
+  const progress = S.curriculumProgress;
+  if (!catalog || !progress) { wrap.style.display = 'none'; return; }
+
+  const topicMap = {};
+  catalog.topics.forEach(t => { topicMap[t.id] = t; });
+
+  const activos = Object.entries(progress.topics || {})
+    .filter(([, t]) => t.estado === 'activo')
+    .sort((a, b) => new Date(a[1].iniciadoEl) - new Date(b[1].iniciadoEl));
+
+  if (activos.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+
+  function buildCard([id, data], isPrimary) {
+    const info = topicMap[id];
+    if (!info) return '';
+    const label  = isPrimary ? 'TEMA ACTIVO' : 'EN PARALELO';
+    const days   = Math.floor((Date.now() - new Date(data.iniciadoEl)) / 86400000);
+    const fossil = days >= 28;
+    const ytUrl  = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(info.youtubeQuery);
+    return `<div class="curric-item${isPrimary ? ' curric-primary' : ' curric-secondary'}">
+      <div class="curric-header">
+        <span class="curric-label">${label} · Módulo ${info.module}</span>
+        ${fossil ? '<span class="curric-warn">⚠ +4 sem</span>' : ''}
+      </div>
+      <div class="curric-name">${info.name}</div>
+      <div class="curric-meta">Iniciado: ${data.iniciadoEl} · ${info.estimatedSessions} ses. estimadas</div>
+      <a class="curric-yt-btn" href="${ytUrl}" target="_blank" rel="noopener">▶ Buscar en YouTube</a>
+    </div>`;
+  }
+
+  panel.innerHTML = activos.slice(0, 2).map((e, i) => buildCard(e, i === 0)).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
 function renderAll() {
   renderDate();
   renderModulo();
   renderHours();
   renderErrors();
+  renderCurriculumPanel();
   renderHistorial();
   renderConfigTab();
   renderImportSection();
