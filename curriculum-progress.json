@@ -1,4 +1,6 @@
 {
   "lastUpdated": "2026-06-19",
-  "topics": {}
+  "topics": {
+    "m1-t03": { "estado": "activo", "iniciadoEl": "2026-06-19", "completadoEl": null }
+  }
 }
