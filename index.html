@@ -154,6 +154,18 @@ body {
 .error-item-text { font-size:13px; color:var(--text); line-height:1.4; }
 .error-item-freq { font-size:11px; color:var(--text-3); margin-top:2px; }
 
+/* ─── Curriculum panel ─── */
+.curric-item { padding: 16px 20px; }
+.curric-item + .curric-item { border-top: 1px solid var(--border); }
+.curric-secondary { opacity: 0.72; }
+.curric-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.curric-label { font-size:11px; font-weight:600; color:var(--green-glow); text-transform:uppercase; letter-spacing:.08em; }
+.curric-secondary .curric-label { color:var(--text-2); }
+.curric-warn { font-size:10px; font-weight:700; color:var(--terra-glow); letter-spacing:.04em; }
+.curric-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
+.curric-meta { font-size:11px; color:var(--text-3); margin-bottom:12px; }
+.curric-yt-btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--blue); text-decoration:none; padding:6px 12px; background:rgba(56,139,253,.1); border:1px solid rgba(56,139,253,.2); border-radius:var(--radius-xs); }
+
 /* ─── CTA Button ─── */
 .cta-wrap { padding: 4px 16px 8px; }
 .cta-btn {
@@ -282,6 +294,69 @@ body {
 .historial-header { padding: 56px 20px 16px; }
 .historial-title { font-family:'Fraunces',serif; font-size:23px; font-weight:700; letter-spacing:-.02em; }
 .historial-sub   { font-size:13px; color:var(--text-2); margin-top:4px; }
+
+/* ─── Historial KPIs ─── */
+.hist-kpi-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.hist-kpi-card { padding:16px 18px 18px; display:flex; flex-direction:column; }
+.hist-kpi-label { font-size:11px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+.hist-kpi-value { font-size:32px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+.hist-kpi-value.streak { color:var(--text); }
+.hist-kpi-value.ratio  { color:var(--green-glow); }
+.hist-streak-icon { font-size:18px; font-weight:400; margin-right:3px; vertical-align:middle; }
+.hist-kpi-sub   { font-size:11px; color:var(--text-3); margin-top:5px; }
+.hist-ratio-bar-track { height:6px; background:var(--border); border-radius:3px; margin-top:12px; overflow:hidden; }
+.hist-ratio-bar-fill  { height:100%; background:var(--green-glow); border-radius:3px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+
+/* ─── Historial bar chart ─── */
+.hist-chart      { }
+.hist-nums-row   { display:flex; gap:6px; margin-bottom:3px; height:14px; }
+.hist-bars-area  { display:flex; align-items:flex-end; gap:6px; height:64px; border-bottom:1px solid var(--border); }
+.hist-lbls-row   { display:flex; gap:6px; margin-top:6px; }
+.hist-bar        { flex:1; border-radius:3px 3px 0 0; transition:height .3s cubic-bezier(.4,0,.2,1); }
+.hist-bar.has-data { background:var(--green-glow); }
+.hist-bar.no-data  { background:var(--border); min-height:2px; }
+.hist-bar-num    { flex:1; text-align:center; font-size:9px; color:var(--text-2); font-weight:600; line-height:14px; }
+.hist-bar-lbl    { flex:1; text-align:center; font-size:10px; color:var(--text-3); font-weight:500; white-space:nowrap; }
+
+/* ─── Rutina del día ─── */
+.rutina-header { display:flex; align-items:center; justify-content:space-between; padding:56px 20px 16px; }
+.rutina-back   { font-size:13px; font-weight:600; color:var(--text-2); background:none; border:none; cursor:pointer; padding:4px 0; -webkit-tap-highlight-color:transparent; }
+.rutina-title  { font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--text); }
+.rutina-step   { border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; transition:border-color 200ms, opacity 200ms, background 200ms; background:var(--surface); }
+.rutina-step.active { border-color:var(--green); background:rgba(0,135,90,.05); }
+.rutina-step.done   { opacity:.5; }
+.rutina-step.future { opacity:.35; }
+.rutina-step-header { display:flex; align-items:center; gap:12px; }
+.rutina-step-num    { width:24px; height:24px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-2); flex-shrink:0; }
+.rutina-step.done .rutina-step-num { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
+.rutina-step-title  { font-size:15px; font-weight:700; color:var(--text); }
+.rutina-step-sub    { font-size:11px; color:var(--text-2); margin-top:1px; }
+.rutina-step-body   { margin-top:14px; }
+.rutina-timer       { font-size:40px; font-weight:800; letter-spacing:-.03em; color:var(--text); line-height:1; }
+.rutina-timer.done  { color:var(--text-3); }
+.rutina-timer-sub   { font-size:12px; color:var(--text-2); margin-top:4px; font-weight:500; }
+.rutina-briefing    { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; font-family:'SF Mono','Cascadia Code',monospace; font-size:11px; color:var(--text-2); max-height:120px; overflow-y:auto; resize:none; outline:none; line-height:1.5; box-sizing:border-box; }
+.rutina-copy-btn    { width:100%; padding:12px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:all 150ms; -webkit-tap-highlight-color:transparent; }
+.rutina-copy-btn.copied { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
+.rutina-done-btn    { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; margin-top:12px; -webkit-tap-highlight-color:transparent; }
+.rutina-start-btn   { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.rutina-running-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(0,135,90,.15); border:1px solid rgba(0,192,122,.2); color:var(--green-glow); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-top:10px; }
+.rutina-pulse-dot   { width:6px; height:6px; border-radius:50%; background:var(--green-glow); display:inline-block; flex-shrink:0; animation:rutina-pulse 1.6s ease-in-out infinite; }
+@keyframes rutina-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+.rutina-completion  { padding:32px 20px 32px; text-align:center; }
+.rutina-completion-title { font-size:13px; font-weight:500; color:var(--text-2); margin-bottom:28px; }
+.rutina-completion-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:32px; }
+.rutina-metric-val  { font-size:28px; font-weight:800; color:var(--text); letter-spacing:-.03em; line-height:1; }
+.rutina-metric-val.green { color:var(--green-glow); }
+.rutina-metric-lbl  { font-size:11px; color:var(--text-2); margin-top:4px; font-weight:500; }
+.rutina-btn-volver  { width:100%; padding:14px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation:none !important; opacity:1; transform:none; }
+  .rutina-pulse-dot { animation:none; }
+  .hist-bar { transition:none; }
+  .hist-ratio-bar-fill { transition:none; }
+}
 .balance-card { padding: 20px; }
 .balance-row  { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .balance-label { font-size:13px; color:var(--text-2); }
@@ -453,6 +528,7 @@ body {
   <!-- ── TAB: INICIO (Estado) ── -->
   <div id="tab-inicio" class="tab-content">
     <div class="scroll-area">
+      <div id="inicio-content">
       <header class="header fade-up">
         <div>
           <div class="greeting-label" id="greeting-label">Buongiorno</div>
@@ -545,6 +621,14 @@ body {
         </div>
       </div>
 
+      <!-- Curriculum: tema activo -->
+      <div id="curriculum-section" style="display:none">
+        <div class="section-title fade-up">Tema gramatical activo</div>
+        <div class="section fade-up">
+          <div class="card" id="curriculum-panel"></div>
+        </div>
+      </div>
+
       <!-- Next milestone -->
       <div class="section-title fade-up">Próximo hito</div>
       <div class="section fade-up">
@@ -552,7 +636,23 @@ body {
           <div style="font-size:13px;color:var(--text);line-height:1.5" id="next-hito">Cargando…</div>
         </div>
       </div>
+      <div class="section fade-up">
+        <button class="rutina-start-btn" onclick="showRutinaView()">Iniciar rutina →</button>
+      </div>
       <div style="height:8px"></div>
+      </div><!-- /inicio-content -->
+
+      <div id="rutina-view" style="display:none">
+        <div class="rutina-header">
+          <button class="rutina-back" onclick="hideRutinaView()">← Inicio</button>
+          <div class="rutina-title">Rutina del día</div>
+        </div>
+        <div class="section" style="padding-top:0">
+          <div id="rutina-steps"></div>
+        </div>
+        <div id="rutina-completion" class="rutina-completion" style="display:none"></div>
+        <div style="height:8px"></div>
+      </div><!-- /rutina-view -->
     </div>
   </div>
 
@@ -680,40 +780,33 @@ body {
     <div class="scroll-area">
       <div class="historial-header fade-up">
         <div class="historial-title">Historial</div>
-        <div class="historial-sub" id="hist-subtitle">Semana actual</div>
+        <div class="historial-sub">Últimos 7 días</div>
       </div>
 
+      <!-- KPIs -->
       <div class="section fade-up">
-        <div class="card balance-card">
-          <div class="balance-row">
-            <span class="balance-label">Horas esta semana</span>
-            <span class="balance-value" id="hist-horas">—</span>
+        <div class="hist-kpi-row">
+          <div class="card hist-kpi-card">
+            <div class="hist-kpi-label">Racha</div>
+            <div class="hist-kpi-value streak" id="hist-streak">—</div>
+            <div class="hist-kpi-sub">días seguidos</div>
           </div>
-          <div class="balance-row" style="margin-bottom:0">
-            <span class="balance-label">Balance crédito/deuda</span>
-            <span class="balance-value" id="hist-balance">—</span>
-          </div>
-          <div class="progress-track" style="margin-top:14px">
-            <div class="progress-fill" id="hist-bar" style="width:0%"></div>
-          </div>
-          <div class="progress-labels" style="margin-top:4px">
-            <span id="hist-pct">0%</span>
-            <span id="hist-meta">meta: 12h</span>
+          <div class="card hist-kpi-card">
+            <div class="hist-kpi-label">Aciertos</div>
+            <div class="hist-kpi-value ratio" id="hist-ratio-num">—</div>
+            <div class="hist-kpi-sub">últimos 7 días</div>
+            <div class="hist-ratio-bar-track">
+              <div class="hist-ratio-bar-fill" id="hist-ratio-bar" style="width:0%"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="section-title fade-up">Log semanal</div>
+      <!-- Gráfica de barras -->
+      <div class="section-title fade-up">Tarjetas por día</div>
       <div class="section fade-up">
-        <div class="card" style="padding:0;overflow:auto">
-          <table class="hours-table" id="hours-table">
-            <thead><tr>
-              <th>Día</th><th>Anki</th><th>Sesión</th><th>Gemini</th><th>Total</th>
-            </tr></thead>
-            <tbody id="hours-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3)">Cargando…</td></tr>
-            </tbody>
-          </table>
+        <div class="card" style="padding:20px 16px 16px">
+          <div id="hist-bar-chart"></div>
         </div>
       </div>
       <div style="height:8px"></div>
@@ -792,6 +885,8 @@ const S = {
   formOpen: false,
   srsReady: false,    // true after deck import completes
   ankiStateSha: null, // SHA of anki-state.json in GitHub
+  curriculumCatalog:  null,
+  curriculumProgress: null,
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -810,7 +905,7 @@ async function boot() {
   }
   S.config = cfg;
   showScreen('app');
-  await Promise.all([initSRSDatabase(), loadAllFiles()]);
+  await Promise.all([initSRSDatabase(), loadAllFiles(), loadCurriculumFiles()]);
   runSM2Tests();
   renderAll();
   renderChecklist(loadChecklist());
@@ -2020,16 +2115,451 @@ async function endSession(reason = 'queue') {
   const taEl = document.getElementById('srs-briefing-text');
   if (taEl) taEl.value = briefingText;
   window._currentBriefing = briefingText;
+  saveSessionLog(total, loSe, noLoSe);
+  completeRutinaStep(0, briefingText);
+}
+
+// ════════════════════════════════════════════════════════════════
+// SESSION LOG — localStorage
+// ════════════════════════════════════════════════════════════════
+function loadSessionLog() {
+  try {
+    return JSON.parse(localStorage.getItem('italiano_session_log') || '[]');
+  } catch { return []; }
+}
+
+function saveSessionLog(reviewed, passed, failed) {
+  if (reviewed < 1) return;
+  const today = todayISO();
+  let log = loadSessionLog();
+  const idx = log.findIndex(e => e.date === today);
+  if (idx >= 0) {
+    log[idx].reviewed += reviewed;
+    log[idx].passed   += passed;
+    log[idx].failed   += failed;
+  } else {
+    log.push({ date: today, reviewed, passed, failed });
+  }
+  if (log.length > 30) log = log.slice(-30);
+  localStorage.setItem('italiano_session_log', JSON.stringify(log));
+}
+
+// ════════════════════════════════════════════════════════════════
+// HISTORIAL — cálculo y render
+// ════════════════════════════════════════════════════════════════
+function calcStreak(log) {
+  let streak = 0;
+  const today = todayISO();
+  for (let i = 0; i < 365; i++) {
+    const d = dateAddDays(today, -i);
+    if (log.find(e => e.date === d && e.reviewed >= 1)) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function calcRatio7d(log) {
+  const today = todayISO();
+  let totalReviewed = 0, totalPassed = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = dateAddDays(today, -i);
+    const entry = log.find(e => e.date === d);
+    if (entry) { totalReviewed += entry.reviewed; totalPassed += entry.passed; }
+  }
+  if (totalReviewed === 0) return null;
+  return Math.round((totalPassed / totalReviewed) * 100);
+}
+
+function buildBarChart(log) {
+  const today = todayISO();
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(dateAddDays(today, -i));
+
+  const counts = days.map(d => (log.find(e => e.date === d) || { reviewed: 0 }).reviewed);
+  const maxVal = Math.max(...counts, 1);
+
+  const DAY_LABELS = ['dom','lun','mar','mié','jue','vie','sáb'];
+
+  const chart = document.createElement('div');
+  chart.className = 'hist-chart';
+
+  const numsRow  = document.createElement('div'); numsRow.className  = 'hist-nums-row';
+  const barsArea = document.createElement('div'); barsArea.className = 'hist-bars-area';
+  const lblsRow  = document.createElement('div'); lblsRow.className  = 'hist-lbls-row';
+
+  days.forEach((d, i) => {
+    const count = counts[i];
+    const heightPct = count > 0 ? Math.max((count / maxVal) * 100, 8) : 2;
+    const dayName = DAY_LABELS[new Date(d + 'T12:00:00').getDay()];
+
+    const numEl = document.createElement('div');
+    numEl.className = 'hist-bar-num';
+    numEl.textContent = count > 0 ? count : '';
+    numsRow.appendChild(numEl);
+
+    const bar = document.createElement('div');
+    bar.className = 'hist-bar ' + (count > 0 ? 'has-data' : 'no-data');
+    bar.style.height = heightPct + '%';
+    barsArea.appendChild(bar);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'hist-bar-lbl';
+    lbl.textContent = dayName;
+    lblsRow.appendChild(lbl);
+  });
+
+  chart.append(numsRow, barsArea, lblsRow);
+  return chart;
+}
+
+function renderHistorial() {
+  const log    = loadSessionLog();
+  const streak = calcStreak(log);
+  const ratio  = calcRatio7d(log);
+
+  const streakEl = document.getElementById('hist-streak');
+  if (streakEl) {
+    if (streak > 0) {
+      streakEl.innerHTML = '<span class="hist-streak-icon">🔥</span>' + streak;
+    } else {
+      streakEl.textContent = '0';
+    }
+  }
+
+  const ratioNumEl = document.getElementById('hist-ratio-num');
+  const ratioBarEl = document.getElementById('hist-ratio-bar');
+  if (ratioNumEl) ratioNumEl.textContent = ratio !== null ? ratio + '%' : '—';
+  if (ratioBarEl) ratioBarEl.style.width  = ratio !== null ? ratio + '%' : '0%';
+
+  const chartEl = document.getElementById('hist-bar-chart');
+  if (chartEl) { chartEl.innerHTML = ''; chartEl.appendChild(buildBarChart(log)); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// RUTINA DEL DÍA
+// ════════════════════════════════════════════════════════════════
+
+let _rutinaTimerInterval = null;
+let _rutinaViewActive    = false;
+
+const RUTINA_STEPS = [
+  { title: 'PWA SRS',          sub: '20 min · Mr. Salas' },
+  { title: 'Ejercicios Claude', sub: 'Diario + gramática' },
+  { title: 'Gemini Live',       sub: '15-20 min · conversación oral' },
+  { title: 'Diario',            sub: '15 min · producción escrita' },
+];
+
+// Tasks 1.1 + 1.2 — state persistence
+function _rutinaKey() {
+  const d = new Date();
+  return 'rutina_' + d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function loadRutina() {
+  try {
+    const raw = localStorage.getItem(_rutinaKey());
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (Array.isArray(s.steps) && s.steps.length === 4) return s;
+    }
+  } catch(e) {}
+  return { steps: [false,false,false,false], timerStart: null, briefing: null };
+}
+
+function saveRutina(state) {
+  try { localStorage.setItem(_rutinaKey(), JSON.stringify(state)); } catch(e) {}
+}
+
+// Task 1.3 — mark step complete
+function completeRutinaStep(stepIndex, briefing) {
+  const state = loadRutina();
+  if (stepIndex === 0 && state.timerStart === null) return; // no-op
+  state.steps[stepIndex] = true;
+  if (briefing !== undefined && briefing !== null) state.briefing = briefing;
+  saveRutina(state);
+}
+
+// Tasks 5.1 + 5.2 — show/hide rutina view
+function showRutinaView() {
+  _rutinaViewActive = true;
+  const ic = document.getElementById('inicio-content');
+  const rv = document.getElementById('rutina-view');
+  if (ic) ic.style.display = 'none';
+  if (rv) rv.style.display = 'block';
+  renderRutina();
+  if (_rutinaTimerInterval) clearInterval(_rutinaTimerInterval);
+  const state = loadRutina();
+  if (!state.steps[0] && state.timerStart !== null) {
+    _rutinaTimerInterval = setInterval(renderRutinaTimer, 1000);
+  }
+}
+
+function hideRutinaView() {
+  _rutinaViewActive = false;
+  if (_rutinaTimerInterval) { clearInterval(_rutinaTimerInterval); _rutinaTimerInterval = null; }
+  const ic = document.getElementById('inicio-content');
+  const rv = document.getElementById('rutina-view');
+  if (rv) rv.style.display = 'none';
+  if (ic) ic.style.display = 'block';
+}
+
+// Task 5.8 — update timer display each second
+function renderRutinaTimer() {
+  if (!_rutinaViewActive) {
+    clearInterval(_rutinaTimerInterval);
+    _rutinaTimerInterval = null;
+    return;
+  }
+  const state = loadRutina();
+  if (state.steps[0] || state.timerStart === null) {
+    clearInterval(_rutinaTimerInterval);
+    _rutinaTimerInterval = null;
+    return;
+  }
+  const el = document.getElementById('rutina-timer-display');
+  if (!el) return;
+  const rem = Math.max(0, 1200 - Math.floor((Date.now() - state.timerStart) / 1000));
+  const mm = String(Math.floor(rem / 60)).padStart(2,'0');
+  const ss = String(rem % 60).padStart(2,'0');
+  el.textContent = mm + ':' + ss;
+  if (rem === 0) el.classList.add('done');
+}
+
+// Task 5.7 — start timer, navigate to flashcards
+function startRutinaTimer() {
+  const state = loadRutina();
+  state.timerStart = Date.now();
+  saveRutina(state);
+  // navigate to flashcards
+  const fcBtn = document.querySelector('.nav-item[onclick*="flashcards"]');
+  if (fcBtn) fcBtn.click();
+  // start interval
+  if (_rutinaTimerInterval) clearInterval(_rutinaTimerInterval);
+  _rutinaTimerInterval = setInterval(renderRutinaTimer, 1000);
+}
+
+// Task 5.9 — mark step done + re-render
+function markRutinaStepDone(stepIndex) {
+  completeRutinaStep(stepIndex);
+  renderRutina();
+}
+
+// Task 6.4 — copy briefing
+function copyRutinaBriefing() {
+  const state = loadRutina();
+  if (!state.briefing) return;
+  navigator.clipboard.writeText(state.briefing).then(() => {
+    const btn = document.getElementById('rutina-copy-btn');
+    if (!btn) return;
+    btn.textContent = '¡Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// Task 5.10 — completion screen
+function renderRutinaCompletion() {
+  const compEl = document.getElementById('rutina-completion');
+  const stepsEl = document.getElementById('rutina-steps');
+  if (!compEl || !stepsEl) return;
+  stepsEl.style.display = 'none';
+  compEl.style.display = 'block';
+
+  // read today's session log for metrics
+  const log = loadSessionLog ? loadSessionLog() : [];
+  const today = new Date().toISOString().slice(0,10);
+  const todayEntries = log.filter(e => e.date && e.date.slice(0,10) === today);
+
+  let totalCards = 0, totalGood = 0;
+  todayEntries.forEach(e => {
+    totalCards += (e.total || 0);
+    totalGood  += (e.loSe  || 0);
+  });
+  const ratio = totalCards > 0 ? Math.round((totalGood / totalCards) * 100) : 0;
+
+  // compute streak from full log
+  let streak = 0;
+  const seen = new Set(log.map(e => e.date && e.date.slice(0,10)).filter(Boolean));
+  const cur = new Date();
+  while (true) {
+    const k = cur.toISOString().slice(0,10);
+    if (!seen.has(k)) break;
+    streak++;
+    cur.setDate(cur.getDate() - 1);
+  }
+
+  compEl.innerHTML = `
+    <div class="rutina-completion-title">Rutina completada</div>
+    <div class="rutina-completion-metrics">
+      <div>
+        <div class="rutina-metric-val green">🔥${streak}</div>
+        <div class="rutina-metric-lbl">días seguidos</div>
+      </div>
+      <div>
+        <div class="rutina-metric-val">${totalCards}</div>
+        <div class="rutina-metric-lbl">tarjetas hoy</div>
+      </div>
+      <div>
+        <div class="rutina-metric-val green">${ratio}%</div>
+        <div class="rutina-metric-lbl">aciertos</div>
+      </div>
+    </div>
+    <button class="rutina-btn-volver" onclick="hideRutinaView()">Volver al inicio</button>
+  `;
+}
+
+// Tasks 5.3-5.6 — main render
+function renderRutina() {
+  if (!_rutinaViewActive) return;
+  const state  = loadRutina();
+  const stepsEl  = document.getElementById('rutina-steps');
+  const compEl   = document.getElementById('rutina-completion');
+  if (!stepsEl || !compEl) return;
+
+  const allDone = state.steps.every(Boolean);
+  if (allDone) { renderRutinaCompletion(); return; }
+
+  compEl.style.display = 'none';
+  stepsEl.style.display = 'block';
+
+  const activeIdx = state.steps.indexOf(false);
+
+  let html = '';
+  RUTINA_STEPS.forEach((step, i) => {
+    const done   = state.steps[i];
+    const active = i === activeIdx;
+    const cls    = done ? 'done' : active ? 'active' : 'future';
+    const numHtml = done
+      ? `<div class="rutina-step-num">✓</div>`
+      : `<div class="rutina-step-num">${i+1}</div>`;
+
+    let bodyHtml = '';
+    if (active) {
+      if (i === 0) {
+        // Task 5.4 — SRS step
+        const hasTimer = state.timerStart !== null;
+        const rem = hasTimer ? Math.max(0, 1200 - Math.floor((Date.now() - state.timerStart) / 1000)) : 1200;
+        const mm  = String(Math.floor(rem / 60)).padStart(2,'0');
+        const ss  = String(rem % 60).padStart(2,'0');
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <div class="rutina-timer${rem===0?' done':''}" id="rutina-timer-display">${mm}:${ss}</div>
+            <div class="rutina-timer-sub">tiempo restante</div>
+            ${hasTimer
+              ? `<div class="rutina-running-badge"><span class="rutina-pulse-dot"></span>En curso…</div>`
+              : `<button class="rutina-start-btn" style="margin-top:14px" onclick="startRutinaTimer()">Iniciar → Flashcards</button>`
+            }
+          </div>`;
+      } else if (i === 1) {
+        // Task 5.5 — briefing step
+        const briefing = state.briefing || '(Completa el SRS primero para ver el resumen aquí)';
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <textarea class="rutina-briefing" readonly>${briefing}</textarea>
+            <button class="rutina-copy-btn" id="rutina-copy-btn" onclick="copyRutinaBriefing()">Copiar</button>
+            <button class="rutina-done-btn" onclick="markRutinaStepDone(${i})">Listo ✓</button>
+          </div>`;
+      } else {
+        // Tasks 5.6 — steps 2-3
+        const desc = i === 2
+          ? 'Abre Gemini Live y conversa 15-20 min en italiano.'
+          : 'Escribe tu diario forzado con las palabras de hoy.';
+        bodyHtml = `
+          <div class="rutina-step-body">
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.5">${desc}</div>
+            <button class="rutina-done-btn" onclick="markRutinaStepDone(${i})">Listo ✓</button>
+          </div>`;
+      }
+    }
+
+    html += `
+      <div class="rutina-step ${cls}">
+        <div class="rutina-step-header">
+          ${numHtml}
+          <div>
+            <div class="rutina-step-title">${step.title}</div>
+            <div class="rutina-step-sub">${step.sub}</div>
+          </div>
+        </div>
+        ${bodyHtml}
+      </div>`;
+  });
+
+  stepsEl.innerHTML = html;
 }
 
 // ════════════════════════════════════════════════════════════════
 // RENDER
+// ════════════════════════════════════════════════════════════════
+// CURRICULUM
+// ════════════════════════════════════════════════════════════════
+async function loadCurriculumFiles() {
+  const BASE = 'https://raw.githubusercontent.com/walg01/italiano-pwa/main';
+  try {
+    const [catRes, progRes] = await Promise.all([
+      fetch(BASE + '/curriculum-catalog.json'),
+      fetch(BASE + '/curriculum-progress.json')
+    ]);
+    S.curriculumCatalog  = catRes.ok  ? await catRes.json()  : null;
+    S.curriculumProgress = progRes.ok ? await progRes.json() : null;
+  } catch {
+    S.curriculumCatalog  = null;
+    S.curriculumProgress = null;
+  }
+}
+
+function renderCurriculumPanel() {
+  const panel = document.getElementById('curriculum-panel');
+  const wrap  = document.getElementById('curriculum-section');
+  if (!panel || !wrap) return;
+
+  const catalog  = S.curriculumCatalog;
+  const progress = S.curriculumProgress;
+  if (!catalog || !progress) { wrap.style.display = 'none'; return; }
+
+  const topicMap = {};
+  catalog.topics.forEach(t => { topicMap[t.id] = t; });
+
+  const activos = Object.entries(progress.topics || {})
+    .filter(([, t]) => t.estado === 'activo')
+    .sort((a, b) => new Date(a[1].iniciadoEl) - new Date(b[1].iniciadoEl));
+
+  if (activos.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+
+  function buildCard([id, data], isPrimary) {
+    const info = topicMap[id];
+    if (!info) return '';
+    const label  = isPrimary ? 'TEMA ACTIVO' : 'EN PARALELO';
+    const days   = Math.floor((Date.now() - new Date(data.iniciadoEl)) / 86400000);
+    const fossil = days >= 28;
+    const ytUrl  = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(info.youtubeQuery);
+    return `<div class="curric-item${isPrimary ? ' curric-primary' : ' curric-secondary'}">
+      <div class="curric-header">
+        <span class="curric-label">${label} · Módulo ${info.module}</span>
+        ${fossil ? '<span class="curric-warn">⚠ +4 sem</span>' : ''}
+      </div>
+      <div class="curric-name">${info.name}</div>
+      <div class="curric-meta">Iniciado: ${data.iniciadoEl} · ${info.estimatedSessions} ses. estimadas</div>
+      <a class="curric-yt-btn" href="${ytUrl}" target="_blank" rel="noopener">▶ Buscar en YouTube</a>
+    </div>`;
+  }
+
+  panel.innerHTML = activos.slice(0, 2).map((e, i) => buildCard(e, i === 0)).join('');
+}
+
 // ════════════════════════════════════════════════════════════════
 function renderAll() {
   renderDate();
   renderModulo();
   renderHours();
   renderErrors();
+  renderCurriculumPanel();
   renderHistorial();
   renderConfigTab();
   renderImportSection();
@@ -2105,43 +2635,6 @@ function renderErrors() {
     </div>`).join('');
 }
 
-function renderHistorial() {
-  const hd = S.parsed.horas || {};
-  const total  = hd.total  || 0;
-  const meta   = hd.meta   || 12;
-  const bal    = hd.balance || 0;
-  const pct    = Math.min(total / meta * 100, 100).toFixed(0);
-  const hours  = Math.floor(total);
-  const mins   = Math.round((total - hours) * 60);
-
-  setText('hist-horas', `${hours}h ${String(mins).padStart(2,'0')}m`);
-  const histBal = document.getElementById('hist-balance');
-  histBal.textContent = (bal >= 0 ? '+' : '') + bal.toFixed(1) + 'h';
-  histBal.className = 'balance-value ' + (bal >= 0 ? 'credit' : 'debt');
-  setText('hist-pct', pct + '%');
-  setText('hist-meta', `meta: ${meta}h`);
-  setTimeout(() => { document.getElementById('hist-bar').style.width = pct + '%'; }, 400);
-
-  const today = new Date().toLocaleDateString('es-AR', {weekday:'short'}).slice(0,3).toLowerCase();
-  const dias = ['lun','mar','mié','jue','vie','sáb','dom'];
-
-  const tbody = document.getElementById('hours-tbody');
-  const rows  = hd.rows || [];
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3)">Sin datos de horas esta semana.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(r => {
-    const isToday = dias.some(d => r.dia.toLowerCase().startsWith(d) && today.startsWith(d));
-    return `<tr class="${isToday ? 'today-row' : ''}">
-      <td class="day-label">${r.dia}</td>
-      <td>${r.anki}</td>
-      <td>${r.sesion}</td>
-      <td>${r.gemini}</td>
-      <td class="total-cell">${r.total}</td>
-    </tr>`;
-  }).join('');
-}
 
 function renderConfigTab() {
   const cfg = S.config || {};
@@ -2440,10 +2933,11 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = 'block';
-  if (tab === 'inicio')     renderChecklist(loadChecklist());
+  if (tab === 'inicio')     { renderChecklist(loadChecklist()); if (_rutinaViewActive) renderRutina(); }
   if (tab === 'config')     { renderConfigTab(); renderImportSection(); }
   if (tab === 'sesion')     regeneratePrompt();
   if (tab === 'flashcards') renderFlashcardsHome();
+  if (tab === 'historial')  renderHistorial();
 }
 
 function showLoading(msg) {
