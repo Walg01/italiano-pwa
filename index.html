@@ -164,7 +164,7 @@ body {
 .curric-warn { font-size:10px; font-weight:700; color:var(--terra-glow); letter-spacing:.04em; }
 .curric-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
 .curric-meta { font-size:11px; color:var(--text-3); margin-bottom:12px; }
-.curric-yt-btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--blue); text-decoration:none; padding:6px 12px; background:rgba(56,139,253,.1); border:1px solid rgba(56,139,253,.2); border-radius:var(--radius-xs); }
+.curric-yt-btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--blue); text-decoration:none; padding:6px 12px; background:oklch(52% 0.08 250 / 10%); border:1px solid oklch(52% 0.08 250 / 25%); border-radius:var(--radius-xs); }
 
 /* ─── CTA Button ─── */
 .cta-wrap { padding: 4px 16px 8px; }
@@ -299,7 +299,7 @@ body {
 .hist-kpi-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .hist-kpi-card { padding:16px 18px 18px; display:flex; flex-direction:column; }
 .hist-kpi-label { font-size:11px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
-.hist-kpi-value { font-size:32px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+.hist-kpi-value { font-family:'Fraunces',serif; font-size:31px; font-weight:700; letter-spacing:-.01em; line-height:1; }
 .hist-kpi-value.streak { color:var(--text); }
 .hist-kpi-value.ratio  { color:var(--green-glow); }
 .hist-streak-icon { font-size:18px; font-weight:400; margin-right:3px; vertical-align:middle; }
@@ -321,35 +321,35 @@ body {
 /* ─── Rutina del día ─── */
 .rutina-header { display:flex; align-items:center; justify-content:space-between; padding:56px 20px 16px; }
 .rutina-back   { font-size:13px; font-weight:600; color:var(--text-2); background:none; border:none; cursor:pointer; padding:4px 0; -webkit-tap-highlight-color:transparent; }
-.rutina-title  { font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--text); }
+.rutina-title  { font-family:'Fraunces',serif; font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
 .rutina-step   { border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; transition:border-color 200ms, opacity 200ms, background 200ms; background:var(--surface); }
-.rutina-step.active { border-color:var(--green); background:rgba(0,135,90,.05); }
+.rutina-step.active { border-color:var(--green); background:oklch(58% 0.10 135 / 6%); }
 .rutina-step.done   { opacity:.5; }
 .rutina-step.future { opacity:.35; }
 .rutina-step-header { display:flex; align-items:center; gap:12px; }
 .rutina-step-num    { width:24px; height:24px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-2); flex-shrink:0; }
-.rutina-step.done .rutina-step-num { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
+.rutina-step.done .rutina-step-num { background:var(--green-tint); border-color:oklch(58% 0.10 135 / 30%); color:var(--green-glow); }
 .rutina-step-title  { font-size:15px; font-weight:700; color:var(--text); }
 .rutina-step-sub    { font-size:11px; color:var(--text-2); margin-top:1px; }
 .rutina-step-body   { margin-top:14px; }
-.rutina-timer       { font-size:40px; font-weight:800; letter-spacing:-.03em; color:var(--text); line-height:1; }
+.rutina-timer       { font-family:'Fraunces',serif; font-size:39px; font-weight:700; letter-spacing:-.01em; color:var(--text); line-height:1; }
 .rutina-timer.done  { color:var(--text-3); }
 .rutina-timer-sub   { font-size:12px; color:var(--text-2); margin-top:4px; font-weight:500; }
 .rutina-briefing    { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; font-family:'SF Mono','Cascadia Code',monospace; font-size:11px; color:var(--text-2); max-height:120px; overflow-y:auto; resize:none; outline:none; line-height:1.5; box-sizing:border-box; }
-.rutina-copy-btn    { width:100%; padding:12px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:all 150ms; -webkit-tap-highlight-color:transparent; }
-.rutina-copy-btn.copied { background:rgba(0,135,90,.15); border-color:rgba(0,192,122,.3); color:var(--green-glow); }
-.rutina-done-btn    { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; margin-top:12px; -webkit-tap-highlight-color:transparent; }
-.rutina-start-btn   { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.rutina-running-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(0,135,90,.15); border:1px solid rgba(0,192,122,.2); color:var(--green-glow); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-top:10px; }
+.rutina-copy-btn    { width:100%; padding:12px; background:var(--surface2); color:var(--text); font-family:'Public Sans',sans-serif; font-size:13px; font-weight:600; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:all 150ms; -webkit-tap-highlight-color:transparent; }
+.rutina-copy-btn.copied { background:var(--green-tint); border-color:oklch(58% 0.10 135 / 30%); color:var(--green-glow); }
+.rutina-done-btn    { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Public Sans',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; margin-top:12px; -webkit-tap-highlight-color:transparent; }
+.rutina-start-btn   { width:100%; padding:14px; background:var(--green); color:#fff; font-family:'Public Sans',sans-serif; font-size:15px; font-weight:700; border:none; border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.rutina-running-badge { display:inline-flex; align-items:center; gap:6px; background:var(--green-tint); border:1px solid oklch(58% 0.10 135 / 30%); color:var(--green-glow); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-top:10px; }
 .rutina-pulse-dot   { width:6px; height:6px; border-radius:50%; background:var(--green-glow); display:inline-block; flex-shrink:0; animation:rutina-pulse 1.6s ease-in-out infinite; }
 @keyframes rutina-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 .rutina-completion  { padding:32px 20px 32px; text-align:center; }
 .rutina-completion-title { font-size:13px; font-weight:500; color:var(--text-2); margin-bottom:28px; }
 .rutina-completion-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:32px; }
-.rutina-metric-val  { font-size:28px; font-weight:800; color:var(--text); letter-spacing:-.03em; line-height:1; }
+.rutina-metric-val  { font-family:'Fraunces',serif; font-size:27px; font-weight:700; color:var(--text); letter-spacing:-.01em; line-height:1; }
 .rutina-metric-val.green { color:var(--green-glow); }
 .rutina-metric-lbl  { font-size:11px; color:var(--text-2); margin-top:4px; font-weight:500; }
-.rutina-btn-volver  { width:100%; padding:14px; background:var(--surface2); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; font-weight:700; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.rutina-btn-volver  { width:100%; padding:14px; background:var(--surface2); color:var(--text); font-family:'Public Sans',sans-serif; font-size:15px; font-weight:700; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; -webkit-tap-highlight-color:transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   .fade-up { animation:none !important; opacity:1; transform:none; }
