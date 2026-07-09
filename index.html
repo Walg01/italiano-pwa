@@ -424,11 +424,7 @@ body {
 .srs-fail-item:last-child { border-bottom: none; }
 
 /* ─── SRS Timer ─── */
-.srs-timer       { font-family: 'SF Mono','Cascadia Code',monospace; font-size: 26px; font-weight: 700; text-align: center; letter-spacing: .06em; margin-bottom: 2px; }
-.srs-timer-msg   { font-size: 12px; font-weight: 600; text-align: center; padding: 4px 0 6px; color: var(--terra-glow); }
-.timer-neutral   { color: var(--text-3); }
-.timer-amber     { color: var(--amber); }
-.timer-red       { color: var(--red); }
+.srs-new-counter { font-family: 'SF Mono','Cascadia Code',monospace; font-size: 15px; font-weight: 700; text-align: center; letter-spacing: .04em; margin-bottom: 6px; color: var(--text-3); }
 
 /* ─── Daily Checklist ─── */
 .checklist-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px 6px; margin: 0 16px 12px; }
@@ -667,8 +663,7 @@ body {
       <div id="srs-session" style="display:none">
         <div class="srs-outer">
           <div id="srs-progress" class="srs-prog">0 / 0</div>
-          <div id="srs-timer" class="srs-timer timer-neutral" style="display:none">20:00</div>
-          <div id="srs-timer-msg" class="srs-timer-msg" style="display:none">⏱ Tiempo agotado — terminá esta tarjeta</div>
+          <div id="srs-new-counter" class="srs-new-counter" style="display:none">Nuevas hoy: 0/10</div>
           <div id="srs-card-wrap" class="srs-card-wrap" onclick="handleCardTap()">
             <div class="card" style="padding:24px;min-height:200px;display:flex;flex-direction:column;justify-content:center">
               <div id="srs-front" class="srs-front">
@@ -840,6 +835,15 @@ body {
         </div>
       </div>
       <div class="section">
+        <div class="card" style="padding:20px">
+          <div class="card-label">Sesión SRS</div>
+          <div class="form-field">
+            <label>Tarjetas nuevas por día</label>
+            <input class="form-input" id="cfg-new-per-day" type="number" min="0" step="1" onchange="saveNewCardsPerDay()">
+          </div>
+        </div>
+      </div>
+      <div class="section">
         <div class="card" id="srs-import-section">
           <!-- filled by renderImportSection() -->
         </div>
@@ -866,6 +870,16 @@ body {
     </button>
   </nav>
 </div><!-- /screen-app -->
+
+<script>
+  window._fsrsReadyResolve = null;
+  window.fsrsReady = new Promise(resolve => { window._fsrsReadyResolve = resolve; });
+</script>
+<script type="module">
+  import * as tsFsrs from 'https://cdn.jsdelivr.net/npm/ts-fsrs@latest/+esm';
+  window.tsfsrs = tsFsrs;
+  window._fsrsReadyResolve();
+</script>
 
 <script>
 'use strict';
@@ -906,7 +920,7 @@ async function boot() {
   S.config = cfg;
   showScreen('app');
   await Promise.all([initSRSDatabase(), loadAllFiles(), loadCurriculumFiles()]);
-  runSM2Tests();
+  await migrateCardStateToFSRS();
   renderAll();
   renderChecklist(loadChecklist());
 }
@@ -1175,14 +1189,19 @@ function checklistAutoComplete(index) {
 // SRS — IndexedDB + Parsers + Import + Sync
 // ════════════════════════════════════════════════════════════════
 
+function localISODate(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 function dateAddDays(isoDate, days) {
   const d = new Date(isoDate + 'T00:00:00');
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return localISODate(d);
 }
 
 let _srsDB = null;
@@ -1337,9 +1356,9 @@ async function importDeckTSV(file) {
     if (!ok) { setStatus('Importación cancelada.'); return; }
   }
 
+  if (!(await waitForFSRS())) { setStatus('❌ No se pudo cargar el motor FSRS — importación cancelada, nada fue tocado.'); return; }
   await dbClear('cards');
 
-  const today = todayISO();
   const cards = [];
   const newStates = [];
 
@@ -1362,7 +1381,7 @@ async function importDeckTSV(file) {
       form3:         row.form3 || null,
       position:      parseInt(row.position) || i,
     });
-    newStates.push({ id, interval: 1, easeFactor: 2.5, dueDate: today, repetitions: 0, lapses: 0 });
+    newStates.push(emptyCardState(id));
     if (i % 50 === 0) setStatus(`Importando… ${i + 1}/${rows.length} tarjetas`);
   }
 
@@ -1391,6 +1410,7 @@ async function importKnownWords(file) {
   };
 
   setStatus('Cargando palabras conocidas…');
+  if (!(await waitForFSRS())) { setStatus('❌ No se pudo cargar el motor FSRS.'); return; }
   const text = await file.text();
   const words = text.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean);
 
@@ -1398,15 +1418,18 @@ async function importKnownWords(file) {
   const cardMap = {};
   for (const c of cards) cardMap[c.keyword.toLowerCase()] = c.id;
 
-  const today = todayISO();
-  const dueDate21 = dateAddDays(today, 21);
+  const dueDate21 = new Date(dateAddDays(todayISO(), 21) + 'T00:00:00');
   let matched = 0, unmatched = 0;
   const updates = [];
 
   for (const word of words) {
     const id = cardMap[word];
     if (id) {
-      updates.push({ id, interval: 21, easeFactor: 2.5, dueDate: dueDate21, repetitions: 1, lapses: 0 });
+      updates.push({
+        id, state: window.tsfsrs.State.Review, due: dueDate21,
+        stability: 21, difficulty: 5, elapsed_days: 0, scheduled_days: 21,
+        reps: 1, lapses: 0, learning_steps: 0, last_review: new Date(),
+      });
       matched++;
     } else {
       unmatched++;
@@ -1421,7 +1444,11 @@ async function syncAnkiStateToGitHub() {
   const states = await dbGetAll('cardState');
   const cards = {};
   for (const s of states) {
-    cards[s.id] = { interval: s.interval, easeFactor: s.easeFactor, dueDate: s.dueDate, repetitions: s.repetitions, lapses: s.lapses };
+    cards[s.id] = {
+      state: s.state, due: s.due, stability: s.stability, difficulty: s.difficulty,
+      reps: s.reps, lapses: s.lapses, learning_steps: s.learning_steps,
+      last_review: s.last_review || null,
+    };
   }
   const payload = JSON.stringify({
     meta: { lastSync: new Date().toISOString(), deckVersion: 1 },
@@ -1494,85 +1521,124 @@ function renderImportSection() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// SRS PHASE 2 — SM-2 + Queue + Session + Rendering
+// SRS PHASE 2 — FSRS + Queue + Session + Rendering
 // ════════════════════════════════════════════════════════════════
 
-// ── SM-2 Algorithm ──────────────────────────────────────────────
+// ── FSRS Scheduler ──────────────────────────────────────────────
 
-function sm2(state, rating) {
-  // rating: 0 = "No lo sé" (quality=0), 1 = "Lo sé" (quality=4)
-  const quality = rating === 1 ? 4 : 0;
-  const { interval, easeFactor, repetitions, lapses } = state;
+const FSRS_LOAD_TIMEOUT_MS = 8000;
 
-  const delta  = 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02);
-  const newEF  = Math.max(1.3, easeFactor + delta);
-
-  let newInterval, newRepetitions, newLapses;
-
-  if (quality < 3) {
-    // Failed — reset
-    newInterval     = 1;
-    newRepetitions  = 0;
-    newLapses       = lapses + 1;
-  } else {
-    // Passed — interval progression
-    newLapses = lapses;
-    if (repetitions === 0) {
-      newInterval    = 1;
-      newRepetitions = 1;
-    } else if (repetitions === 1) {
-      newInterval    = 6;
-      newRepetitions = 2;
-    } else {
-      newInterval    = Math.round(interval * newEF);
-      newRepetitions = repetitions + 1;
-    }
-  }
-
-  return {
-    interval:    newInterval,
-    easeFactor:  newEF,
-    dueDate:     dateAddDays(todayISO(), newInterval),
-    repetitions: newRepetitions,
-    lapses:      newLapses,
-  };
+// Espera a que cargue el CDN de ts-fsrs, con timeout — nunca cuelga la app en silencio.
+// No cachea el fallo: si el CDN llega tarde (red lenta), la próxima llamada lo detecta
+// enseguida porque window.fsrsReady ya está resuelto.
+function waitForFSRS() {
+  return Promise.race([
+    window.fsrsReady.then(() => true),
+    new Promise(resolve => setTimeout(() => resolve(false), FSRS_LOAD_TIMEOUT_MS)),
+  ]).then(ok => {
+    if (!ok) showToast('⚠️ No se pudo cargar el motor de repaso (ts-fsrs). Revisá tu conexión y volvé a abrir la app.');
+    return ok;
+  });
 }
 
-// Inline unit tests — run once at startup, silent if all pass
-function runSM2Tests() {
-  const s0 = { interval: 1, easeFactor: 2.5, repetitions: 0, lapses: 0 };
+let _fsrsScheduler = null;
 
-  const t1 = sm2(s0, 0);
-  console.assert(t1.repetitions === 0,     'SM2 T1: rep=0 after fail');
-  console.assert(t1.interval    === 1,     'SM2 T1: interval=1 after fail');
-  console.assert(t1.lapses      === 1,     'SM2 T1: lapses=1');
-  console.assert(t1.easeFactor  < 2.5,    'SM2 T1: EF decreases on fail');
+async function getScheduler() {
+  if (!(await waitForFSRS())) return null;
+  if (!_fsrsScheduler) {
+    _fsrsScheduler = window.tsfsrs.fsrs({
+      learning_steps:    ['1m', '10m'],
+      relearning_steps:  ['10m'],
+      request_retention: 0.9,
+      enable_short_term: true,
+    });
+  }
+  return _fsrsScheduler;
+}
 
-  const sFloor = { interval: 1, easeFactor: 1.3, repetitions: 0, lapses: 0 };
-  const t2 = sm2(sFloor, 0);
-  console.assert(Math.abs(t2.easeFactor - 1.3) < 0.0001, 'SM2 T2: EF floor=1.3');
+function emptyCardState(id) {
+  return fromFSRSCard(id, window.tsfsrs.createEmptyCard(new Date()));
+}
 
-  const t3 = sm2(s0, 1);
-  console.assert(t3.repetitions === 1,    'SM2 T3: rep=1 first pass');
-  console.assert(t3.interval    === 1,    'SM2 T3: interval=1 first pass');
-  console.assert(Math.abs(t3.easeFactor - 2.5) < 0.0001, 'SM2 T3: EF net 0 on quality=4');
+function toFSRSCard(stored) {
+  const { id, ...card } = stored;
+  return card;
+}
 
-  const s1 = { interval: 1, easeFactor: 2.5, repetitions: 1, lapses: 0 };
-  const t4 = sm2(s1, 1);
-  console.assert(t4.repetitions === 2,    'SM2 T4: rep=2 second pass');
-  console.assert(t4.interval    === 6,    'SM2 T4: interval=6 second pass');
+function fromFSRSCard(id, card) {
+  return { id, ...card };
+}
 
-  const s2 = { interval: 6, easeFactor: 2.5, repetitions: 2, lapses: 0 };
-  const t5 = sm2(s2, 1);
-  console.assert(t5.repetitions === 3,    'SM2 T5: rep=3 third pass');
-  console.assert(t5.interval    === Math.round(6 * 2.5), 'SM2 T5: interval scales by EF');
+// ── Cupo de tarjetas nuevas por día ───────────────────────────────
 
-  console.log('[SM-2] All unit tests passed ✓');
+function getNewCardsPerDay() {
+  const n = parseInt(localStorage.getItem('italiano_new_per_day'), 10);
+  return Number.isFinite(n) && n > 0 ? n : 10;
+}
+
+function setNewCardsPerDay(n) {
+  localStorage.setItem('italiano_new_per_day', String(Math.max(0, Math.floor(n) || 0)));
+}
+
+function getNewShownToday() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('italiano_new_shown_today') || 'null');
+    return (raw && raw.date === todayISO()) ? raw.count : 0;
+  } catch { return 0; }
+}
+
+function incrementNewShownToday() {
+  localStorage.setItem('italiano_new_shown_today', JSON.stringify({ date: todayISO(), count: getNewShownToday() + 1 }));
+}
+
+// ── Migración SM-2 → FSRS (una sola vez) ─────────────────────────
+
+async function migrateCardStateToFSRS() {
+  if (localStorage.getItem('italiano_srs_fsrs_migrated') === 'true') return;
+  if (!(await waitForFSRS())) return; // no migró; boot() sigue igual, se reintenta la próxima vez que se abra la app
+
+  // D0(Again) = w4 - e^((1-1)*w5) + 1 = w4 (el exponente se anula en G=1).
+  // Verificado corriendo scheduler.next(createEmptyCard(), now, Rating.Again).card.difficulty
+  // con los pesos default actuales de ts-fsrs: 6.4133. No es arbitrario — es el valor real que
+  // FSRS le asigna a cualquier tarjeta que se falla en su primer intento real.
+  const FAILED_NEVER_PASSED_DIFFICULTY = 6.4133;
+
+  const states = await dbGetAll('cardState');
+  const migrated = states.filter(s => s.state === undefined).map(s => {
+    const isNew          = s.repetitions === 0;
+    const failedNotPassed = isNew && s.lapses > 0; // "caso architettura": fallada, nunca acertada
+    return {
+      id:             s.id,
+      state:          (isNew && !failedNotPassed) ? window.tsfsrs.State.New : window.tsfsrs.State.Review,
+      due:            (isNew && !failedNotPassed) ? new Date() : new Date(s.dueDate + 'T00:00:00'),
+      stability:      (isNew && !failedNotPassed) ? 0 : Math.max(s.interval, 0.1),
+      difficulty:     (isNew && !failedNotPassed) ? 0 : (failedNotPassed ? FAILED_NEVER_PASSED_DIFFICULTY : 5),
+      elapsed_days:   0,
+      scheduled_days: (isNew && !failedNotPassed) ? 0 : s.interval,
+      reps:           s.repetitions || 0,
+      lapses:         s.lapses || 0,
+      learning_steps: 0,
+      last_review:    (isNew && !failedNotPassed) ? undefined : new Date(),
+    };
+  });
+
+  if (migrated.length) await dbPutAll('cardState', migrated);
+  localStorage.setItem('italiano_srs_fsrs_migrated', 'true');
 }
 
 // ── Session Queue Builder ────────────────────────────────────────
 
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function buildSessionQueue() {
+  if (!(await waitForFSRS())) return { ordered: [], learningWatch: [] };
   const [states, cards] = await Promise.all([
     dbGetAll('cardState'),
     dbGetAll('cards'),
@@ -1581,88 +1647,77 @@ async function buildSessionQueue() {
   const posMap = {};
   for (const c of cards) posMap[c.id] = c.position ?? 9999;
 
-  const today    = todayISO();
-  const newCards = [];
-  const dueCards = [];
+  const { State } = window.tsfsrs;
+  const now   = new Date();
+  const today = todayISO();
+
+  const learningDue   = [];
+  const learningWatch = [];
+  const reviewDue     = [];
+  const fresh         = [];
 
   for (const s of states) {
-    if (s.repetitions === 0) {
-      newCards.push({ id: s.id, position: posMap[s.id] ?? 9999 });
-    } else if (s.dueDate <= today) {
-      dueCards.push({ id: s.id, dueDate: s.dueDate });
+    if (s.state === State.New) {
+      fresh.push({ id: s.id, position: posMap[s.id] ?? 9999 });
+    } else if (s.state === State.Learning || s.state === State.Relearning) {
+      if (s.due <= now) learningDue.push({ id: s.id, due: s.due });
+      else learningWatch.push({ id: s.id, due: s.due });
+    } else if (s.state === State.Review) {
+      if (localISODate(s.due) <= today) reviewDue.push({ id: s.id, due: s.due });
     }
   }
 
-  newCards.sort((a, b) => a.position - b.position);
-  dueCards.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  learningDue.sort((a, b) => a.due - b.due);
+  fresh.sort((a, b) => a.position - b.position);
 
-  return [
-    ...newCards.map(c => c.id),
-    ...dueCards.map(c => c.id),
-  ];
+  const remainingNewCap = Math.max(0, getNewCardsPerDay() - getNewShownToday());
+  const cappedFresh = fresh.slice(0, remainingNewCap);
+  const mixed = shuffleArray([...reviewDue, ...cappedFresh]);
+
+  return {
+    ordered:       [...learningDue.map(c => c.id), ...mixed.map(c => c.id)],
+    learningWatch,
+  };
 }
 
 // ── ReviewSession ────────────────────────────────────────────────
 
 const ReviewSession = {
-  queue:            [],
+  queue:            [],   // ids restantes de la mezcla New/Review pre-armada
+  learningWatch:    [],   // [{id, due}] — Learning/Relearning aún no vencidas, se vigilan para interrumpir
   current:          null,
   flipped:          false,
-  reviewed:         [],         // { id, keyword, rating } — last rating per card
-  requeuedIds:      new Set(),
+  reviewed:         [],   // { id, keyword, rating } — última calificación por tarjeta
   done:             false,
   originalTotal:    0,
-  timerExpired:     false,
-  timerId:          null,
-  sessionStartTime: null,
-  secondsRemaining: 1200,
-  cardLookup:       {},         // { [id]: { keyword, translation } } — built during loadCard
+  cardLookup:       {},   // { [id]: { keyword, translation } } — se arma en loadCard
 };
 window.ReviewSession = ReviewSession;
 
-function startTimer() {
-  ReviewSession.sessionStartTime  = Date.now();
-  ReviewSession.secondsRemaining  = 1200;
-  ReviewSession.timerExpired      = false;
-  renderTimer(1200);
-  const timerEl = document.getElementById('srs-timer');
-  if (timerEl) timerEl.style.display = '';
-  ReviewSession.timerId = setInterval(onTick, 1000);
-}
-
-function stopTimer() {
-  if (ReviewSession.timerId) {
-    clearInterval(ReviewSession.timerId);
-    ReviewSession.timerId = null;
+function getNextCardId() {
+  const now = new Date();
+  // Regla 1 — Learning/Relearning vencidas interrumpen siempre, sin excepción.
+  let earliestIdx = -1, earliestDue = null;
+  for (let i = 0; i < ReviewSession.learningWatch.length; i++) {
+    const w = ReviewSession.learningWatch[i];
+    if (w.due <= now && (earliestDue === null || w.due < earliestDue)) {
+      earliestIdx = i; earliestDue = w.due;
+    }
   }
+  if (earliestIdx >= 0) {
+    const [w] = ReviewSession.learningWatch.splice(earliestIdx, 1);
+    return w.id;
+  }
+  // Regla 2 — mezcla New/Review pre-armada (shuffle), fuera de la regla 1.
+  if (ReviewSession.queue.length) return ReviewSession.queue.shift();
+  return null;
 }
 
-function onTick() {
-  const elapsed   = Math.floor((Date.now() - ReviewSession.sessionStartTime) / 1000);
-  const remaining = Math.max(0, 1200 - elapsed);
-  ReviewSession.secondsRemaining = remaining;
-  renderTimer(remaining);
-  if (remaining <= 0) onTimerExpired();
-}
-
-function onTimerExpired() {
-  ReviewSession.timerExpired = true;
-  stopTimer();
-  renderTimer(0);
-  const msgEl = document.getElementById('srs-timer-msg');
-  if (msgEl) msgEl.style.display = '';
-}
-
-function renderTimer(seconds) {
-  const el = document.getElementById('srs-timer');
+function renderNewCounter() {
+  const el = document.getElementById('srs-new-counter');
   if (!el) return;
-  const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const ss = String(seconds % 60).padStart(2, '0');
-  el.textContent = `${mm}:${ss}`;
-  el.classList.remove('timer-neutral', 'timer-amber', 'timer-red');
-  if      (seconds <= 59)  el.classList.add('timer-red');
-  else if (seconds <= 299) el.classList.add('timer-amber');
-  else                     el.classList.add('timer-neutral');
+  el.textContent = `Nuevas hoy: ${getNewShownToday()}/${getNewCardsPerDay()}`;
+  el.style.display = '';
 }
 
 let _audioWord = null;
@@ -1671,24 +1726,30 @@ let _audioSent = null;
 const MEDIA_BASE = './media/';
 
 async function startSession() {
-  const queue = await buildSessionQueue();
-  if (!queue.length) { renderFlashcardsHome(); return; }
+  const { ordered, learningWatch } = await buildSessionQueue();
+  if (!ordered.length && !learningWatch.length) { renderFlashcardsHome(); return; }
 
-  ReviewSession.queue         = queue.slice(1);
+  ReviewSession.queue         = ordered;
+  ReviewSession.learningWatch = learningWatch;
   ReviewSession.reviewed      = [];
-  ReviewSession.requeuedIds   = new Set();
   ReviewSession.done          = false;
-  ReviewSession.originalTotal = queue.length;
+  ReviewSession.originalTotal = ordered.length + learningWatch.length;
   ReviewSession.cardLookup    = {};
 
   showSRSView('session');
-  await loadCard(queue[0]);
-  startTimer();
+  renderNewCounter();
+  await advanceToNextOrEnd();
+}
+
+async function advanceToNextOrEnd() {
+  const nextId = getNextCardId();
+  if (nextId === null) { await endSession(); return; }
+  await loadCard(nextId);
 }
 
 async function loadCard(id) {
   const card = await dbGet('cards', id);
-  if (!card) { endSession(); return; }
+  if (!card) { await advanceToNextOrEnd(); return; }
   ReviewSession.current = card;
   ReviewSession.flipped = false;
   ReviewSession.cardLookup[id] = { keyword: card.keyword, translation: card.translation };
@@ -1714,11 +1775,23 @@ async function rateCard(rating) {
   if (btnNo)  btnNo.disabled  = true;
   if (btnYes) btnYes.disabled = true;
 
-  // Apply SM-2
-  const state    = await dbGet('cardState', card.id) ||
-    { id: card.id, interval: 1, easeFactor: 2.5, dueDate: todayISO(), repetitions: 0, lapses: 0 };
-  const newState = { id: card.id, ...sm2(state, rating) };
+  const scheduler = await getScheduler();
+  if (!scheduler) {
+    if (btnNo)  btnNo.disabled  = false;
+    if (btnYes) btnYes.disabled = false;
+    return;
+  }
+  const { Rating, State } = window.tsfsrs;
+
+  const stored = await dbGet('cardState', card.id) || emptyCardState(card.id);
+  const wasNew = stored.state === State.New;
+
+  const fsrsRating = rating === 1 ? Rating.Good : Rating.Again;
+  const result   = scheduler.next(toFSRSCard(stored), new Date(), fsrsRating);
+  const newState = fromFSRSCard(card.id, result.card);
   await dbPutAll('cardState', [newState]);
+
+  if (wasNew) { incrementNewShownToday(); renderNewCounter(); }
 
   // Track last rating per unique card
   const idx = ReviewSession.reviewed.findIndex(r => r.id === card.id);
@@ -1728,31 +1801,14 @@ async function rateCard(rating) {
     ReviewSession.reviewed.push({ id: card.id, keyword: card.keyword, rating });
   }
 
-  // If timer expired: end after this card, no re-queue
-  if (ReviewSession.timerExpired) {
-    if (btnNo)  btnNo.disabled  = false;
-    if (btnYes) btnYes.disabled = false;
-    endSession('timer');
-    return;
+  // Sigue en Learning/Relearning: se vigila para reaparecer cuando venza su paso (Regla 1).
+  if (newState.state === State.Learning || newState.state === State.Relearning) {
+    ReviewSession.learningWatch.push({ id: card.id, due: newState.due });
   }
 
-  // Re-queue on first failure only
-  if (rating === 0 && !ReviewSession.requeuedIds.has(card.id)) {
-    ReviewSession.queue.push(card.id);
-    ReviewSession.requeuedIds.add(card.id);
-  }
-
-  if (ReviewSession.queue.length === 0) {
-    if (btnNo)  btnNo.disabled  = false;
-    if (btnYes) btnYes.disabled = false;
-    endSession('queue');
-    return;
-  }
-
-  const nextId = ReviewSession.queue.shift();
   if (btnNo)  btnNo.disabled  = false;
   if (btnYes) btnYes.disabled = false;
-  await loadCard(nextId);
+  await advanceToNextOrEnd();
 }
 
 // ── SRS View Management ──────────────────────────────────────────
@@ -1870,13 +1926,30 @@ async function renderFlashcardsHome() {
     return;
   }
 
+  if (!(await waitForFSRS())) {
+    homeEl.innerHTML = `<div class="srs-home-wrap">
+      <div class="card" style="padding:28px;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">No se pudo cargar el motor de repaso</div>
+        <div style="font-size:13px;color:var(--text-2)">Revisá tu conexión y volvé a intentar.</div>
+      </div>
+    </div>`;
+    return;
+  }
+  const { State } = window.tsfsrs;
   const states = await dbGetAll('cardState');
   const today  = todayISO();
-  let newCount = 0, dueCount = 0;
+  const now    = new Date();
+  let freshCount = 0, dueCount = 0;
   for (const s of states) {
-    if (s.repetitions === 0) newCount++;
-    else if (s.dueDate <= today) dueCount++;
+    if (s.state === State.New) freshCount++;
+    else if (s.state === State.Learning || s.state === State.Relearning) {
+      if (s.due <= now) dueCount++;
+    } else if (s.state === State.Review) {
+      if (localISODate(s.due) <= today) dueCount++;
+    }
   }
+  const newCount = Math.min(freshCount, Math.max(0, getNewCardsPerDay() - getNewShownToday()));
   const total = newCount + dueCount;
 
   if (total === 0) {
@@ -2024,25 +2097,21 @@ function showCopyFailure() {
   btn.textContent = 'Error — seleccioná el texto manualmente';
 }
 
-async function endSession(reason = 'queue') {
+async function endSession() {
   ReviewSession.done = true;
-  stopTimer();
   checklistAutoComplete(0);
 
   if (_audioWord) { _audioWord.pause(); _audioWord = null; }
   if (_audioSent) { _audioSent.pause(); _audioSent = null; }
 
-  const pendingCount = ReviewSession.queue.length;
+  const waitingCount = ReviewSession.learningWatch.length;
   const total  = ReviewSession.reviewed.length;
   const loSe   = ReviewSession.reviewed.filter(r => r.rating === 1).length;
   const noLoSe = ReviewSession.reviewed.filter(r => r.rating === 0).length;
   const failed = ReviewSession.reviewed.filter(r => r.rating === 0);
 
-  // Hide timer elements
-  const timerEl  = document.getElementById('srs-timer');
-  const timerMsg = document.getElementById('srs-timer-msg');
-  if (timerEl)  timerEl.style.display  = 'none';
-  if (timerMsg) timerMsg.style.display = 'none';
+  const counterEl = document.getElementById('srs-new-counter');
+  if (counterEl) counterEl.style.display = 'none';
 
   // Show loading state while syncing
   const endEl = document.getElementById('srs-end');
@@ -2058,14 +2127,11 @@ async function endSession(reason = 'queue') {
   const briefingText = buildBriefing();
 
   // Build end screen
-  const header = reason === 'timer'
-    ? `<div class="srs-end-title">⏱ Tiempo agotado</div>
-       <div class="srs-end-sub">Revisaste ${total} tarjeta${total !== 1 ? 's' : ''}</div>`
-    : `<div class="srs-end-title">${noLoSe === 0 ? '🔥' : '✓'} Sesión completada</div>
-       <div class="srs-end-sub">Revisaste todas las tarjetas de hoy</div>`;
+  const header = `<div class="srs-end-title">${noLoSe === 0 ? '🔥' : '✓'} Sesión completada</div>
+       <div class="srs-end-sub">Revisaste ${total} tarjeta${total !== 1 ? 's' : ''} de hoy</div>`;
 
-  const pendingHtml = (reason === 'timer' && pendingCount > 0)
-    ? `<div style="font-size:12px;color:var(--text-3);text-align:center;margin-top:-6px">Quedaron ${pendingCount} tarjeta${pendingCount !== 1 ? 's' : ''} sin revisar</div>`
+  const pendingHtml = waitingCount > 0
+    ? `<div style="font-size:12px;color:var(--text-3);text-align:center;margin-top:-6px">${waitingCount} tarjeta${waitingCount !== 1 ? 's' : ''} en aprendizaje — volverán en unos minutos</div>`
     : '';
 
   const syncMsg = !syncResult.ok
@@ -2643,6 +2709,13 @@ function renderConfigTab() {
   el('cfg-repo').value  = cfg.repo  || '';
   el('cfg-token').value = cfg.token || '';
   el('config-repo-display').textContent = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : '—';
+  el('cfg-new-per-day').value = getNewCardsPerDay();
+}
+
+function saveNewCardsPerDay() {
+  const val = parseInt(document.getElementById('cfg-new-per-day').value, 10);
+  setNewCardsPerDay(Number.isFinite(val) ? val : 10);
+  showToast('✓ Cupo de nuevas actualizado');
 }
 
 function updateLastSync() {
@@ -2926,9 +2999,6 @@ function showScreen(name) {
 }
 
 function switchTab(tab, btn) {
-  // Stop timer if navigating away from an active flashcard session
-  if (tab !== 'flashcards' && ReviewSession.timerId) stopTimer();
-
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
