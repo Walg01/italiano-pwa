@@ -58,19 +58,23 @@
 
   // ── 2. Dry-run de la migración — replica EXACTO migrateCardStateToFSRS() ──
   // sin llamar dbPutAll: solo calcula y muestra, no persiste nada.
+  // D0(Again) = w4 - e^0 + 1 = w4 con los pesos default de ts-fsrs: 6.4133. No arbitrario —
+  // es el valor real que FSRS asigna a una tarjeta fallada en su primer intento.
+  const FAILED_NEVER_PASSED_DIFFICULTY = 6.4133;
   const State = { New: 0, Learning: 1, Review: 2, Relearning: 3 };
   const preview = states.map(s => {
     const isNew = s.repetitions === 0;
+    const failedNotPassed = isNew && s.lapses > 0; // "caso architettura": fallada, nunca acertada
     return {
       id: s.id,
       keyword: cardMap[s.id] || s.id,
       before: { interval: s.interval, repetitions: s.repetitions, lapses: s.lapses, easeFactor: s.easeFactor, dueDate: s.dueDate },
       after: {
-        state:      isNew ? State.New : State.Review,
-        stateLabel: isNew ? 'New' : 'Review',
-        due:        isNew ? new Date().toISOString() : new Date(s.dueDate + 'T00:00:00').toISOString(),
-        stability:  isNew ? 0 : Math.max(s.interval, 0.1),
-        difficulty: isNew ? 0 : 5,
+        state:      (isNew && !failedNotPassed) ? State.New : State.Review,
+        stateLabel: (isNew && !failedNotPassed) ? 'New' : 'Review',
+        due:        (isNew && !failedNotPassed) ? new Date().toISOString() : new Date(s.dueDate + 'T00:00:00').toISOString(),
+        stability:  (isNew && !failedNotPassed) ? 0 : Math.max(s.interval, 0.1),
+        difficulty: (isNew && !failedNotPassed) ? 0 : (failedNotPassed ? FAILED_NEVER_PASSED_DIFFICULTY : 5),
         reps:       s.repetitions || 0,
         lapses:     s.lapses || 0,
       },
