@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurar backup SM-2</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; background: #faf9f7; color: #241a12; line-height: 1.5; }
+  h1 { font-size: 20px; margin: 8px 0 4px; }
+  p.sub { color: #6b5d4f; font-size: 14px; margin: 0 0 20px; }
+  .danger { background: #fdeee9; border: 1px solid #e8a58f; border-radius: 10px; padding: 14px; font-size: 13px; margin-bottom: 20px; }
+  .danger b { color: #a5340f; }
+  input[type=file] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e8ddd0; background: #fff; margin-bottom: 12px; }
+  button { width: 100%; font-size: 16px; font-weight: 700; padding: 14px; border-radius: 12px; border: none; margin-top: 8px; }
+  #confirm-btn { background: #a5340f; color: #fff; }
+  #confirm-btn:disabled { opacity: .4; }
+  .status { font-size: 13px; color: #6b5d4f; margin-top: 12px; white-space: pre-line; }
+  .preview-box { background: #fff; border: 1px solid #e8ddd0; border-radius: 10px; padding: 14px; font-size: 13px; margin: 12px 0; display: none; }
+</style>
+</head>
+<body>
+  <h1>Restaurar backup SM-2</h1>
+  <p class="sub">Solo usar si una migración salió mal y necesitás volver al estado anterior.</p>
+
+  <div class="danger">
+    <b>Esto SOBREESCRIBE</b> el progreso actual de este dispositivo con el contenido del archivo que subas. Antes de confirmar, esta página descarga automáticamente una copia de lo que había ANTES de restaurar, por si hace falta investigar qué salió mal.
+  </div>
+
+  <input type="file" id="file-input" accept="application/json">
+  <div class="preview-box" id="preview-box"></div>
+  <button id="confirm-btn" disabled onclick="doRestore()">Restaurar backup ahora</button>
+  <div class="status" id="status"></div>
+
+<script>
+let pendingData = null;
+
+document.getElementById('file-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const status = document.getElementById('status');
+  const box = document.getElementById('preview-box');
+  const btn = document.getElementById('confirm-btn');
+  box.style.display = 'none';
+  btn.disabled = true;
+  pendingData = null;
+
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const json = JSON.parse(text);
+    if (!json.cards || typeof json.cards !== 'object') {
+      status.textContent = 'Error: este archivo no tiene la forma esperada (falta "cards").';
+      return;
+    }
+    const count = Object.keys(json.cards).length;
+    pendingData = json;
+    box.style.display = 'block';
+    box.innerHTML = `Archivo: <b>${file.name}</b><br>Exportado: ${json.meta?.exportedAt || '—'}<br>Tarjetas en el backup: <b>${count}</b>`;
+    status.textContent = 'Revisá los datos arriba. Si es el archivo correcto, tocá "Restaurar backup ahora".';
+    btn.disabled = false;
+  } catch (err) {
+    status.textContent = 'Error leyendo el archivo: ' + err.message;
+  }
+});
+
+function getAll(db, store) {
+  return new Promise((res, rej) => {
+    const tx  = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function putAll(db, store, items) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const os = tx.objectStore(store);
+    items.forEach(i => os.put(i));
+    tx.oncomplete = res;
+    tx.onerror    = () => rej(tx.error);
+  });
+}
+
+function download(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function doRestore() {
+  const status = document.getElementById('status');
+  const btn = document.getElementById('confirm-btn');
+  if (!pendingData) return;
+  btn.disabled = true;
+  status.textContent = 'Restaurando…';
+
+  try {
+    const db = await new Promise((res, rej) => {
+      const req = indexedDB.open('italiano-srs', 1);
+      req.onsuccess = e => res(e.target.result);
+      req.onerror   = e => rej(e.target.error);
+    });
+
+    // Safety net: bajar lo que había ANTES de sobreescribir, por si hace falta investigar.
+    const before = await getAll(db, 'cardState');
+    const today = new Date().toISOString().slice(0, 10);
+    download(
+      { savedAt: new Date().toISOString(), note: 'Estado ANTES de restaurar — auto-generado por restore.html', cardState: before },
+      `cardstate-pre-restore-${today}.json`
+    );
+
+    // Restaurar: cada entrada de cards se escribe de vuelta con forma SM-2 plana,
+    // reemplazando el registro completo (put() no mezcla campos viejos con nuevos).
+    const restored = Object.entries(pendingData.cards).map(([id, c]) => ({
+      id,
+      interval: c.interval,
+      easeFactor: c.easeFactor,
+      dueDate: c.dueDate,
+      repetitions: c.repetitions,
+      lapses: c.lapses,
+    }));
+    await putAll(db, 'cardState', restored);
+
+    // Limpiar el flag de migración para que, si se reintenta más adelante, no se salte.
+    localStorage.removeItem('italiano_srs_fsrs_migrated');
+
+    status.textContent = `Listo. ${restored.length} tarjetas restauradas al formato SM-2.\nSe descargó una copia de lo que había antes (cardstate-pre-restore-${today}.json).\n\nSi la app desplegada sigue siendo la versión FSRS, hay que revertir también el código (index.html) — este paso solo arregla los datos.`;
+  } catch (err) {
+    status.textContent = 'Error durante la restauración: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
