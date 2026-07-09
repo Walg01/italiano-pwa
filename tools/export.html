@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backup + preview FSRS</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; background: #faf9f7; color: #241a12; line-height: 1.5; }
+  h1 { font-size: 20px; margin: 8px 0 4px; }
+  p.sub { color: #6b5d4f; font-size: 14px; margin: 0 0 20px; }
+  .warn { background: #fff3e6; border: 1px solid #e8c99a; border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 20px; }
+  button { width: 100%; font-size: 16px; font-weight: 700; padding: 14px; border-radius: 12px; border: none; background: #a5340f; color: #fff; }
+  button:active { background: #7a260b; }
+  button:disabled { opacity: .5; }
+  .status { font-size: 13px; color: #6b5d4f; margin-top: 10px; min-height: 20px; }
+  .result { display: none; margin-top: 24px; }
+  .stat-row { display: flex; gap: 12px; margin: 16px 0; }
+  .stat { flex: 1; background: #fff; border: 1px solid #e8ddd0; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat b { display: block; font-size: 22px; }
+  .stat span { font-size: 11px; color: #6b5d4f; text-transform: uppercase; letter-spacing: .04em; }
+  .dl-links { margin: 16px 0; display: flex; flex-direction: column; gap: 8px; }
+  .dl-links a { display: block; background: #fff; border: 1px solid #e8ddd0; border-radius: 10px; padding: 12px 14px; color: #a5340f; text-decoration: none; font-size: 14px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  th, td { border-bottom: 1px solid #e8ddd0; padding: 6px 4px; text-align: left; white-space: nowrap; }
+  th { font-size: 10px; text-transform: uppercase; color: #6b5d4f; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .after-new { color: #a5340f; font-weight: 700; }
+  .after-review { color: #3f6b3a; font-weight: 700; }
+</style>
+</head>
+<body>
+  <h1>Backup + preview de migración FSRS</h1>
+  <p class="sub">Solo lectura. No escribe nada en tu progreso real, no requiere token de GitHub.</p>
+  <div class="warn">Lee la IndexedDB de <strong>este</strong> navegador/dispositivo. Abrí esta página en el mismo lugar donde hacés tus repasos reales — si la abrís en otro dispositivo, vas a leer una base de datos distinta (probablemente vacía).</div>
+
+  <button id="run-btn" onclick="run()">Generar backup + preview</button>
+  <div class="status" id="status"></div>
+
+  <div class="result" id="result">
+    <div class="stat-row">
+      <div class="stat"><b id="stat-total">—</b><span>Tarjetas</span></div>
+      <div class="stat"><b id="stat-atrisk">—</b><span>Con lapses, migran como New</span></div>
+    </div>
+    <div class="dl-links" id="dl-links"></div>
+    <div class="table-wrap">
+      <table id="sample-table"></table>
+    </div>
+  </div>
+
+<script>
+function getAll(db, store) {
+  return new Promise((res, rej) => {
+    const tx  = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function download(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  return url;
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+async function run() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  setStatus('Abriendo IndexedDB…');
+
+  try {
+    const db = await new Promise((res, rej) => {
+      const req = indexedDB.open('italiano-srs', 1);
+      req.onsuccess = e => res(e.target.result);
+      req.onerror   = e => rej(e.target.error);
+    });
+
+    const states = await getAll(db, 'cardState');
+    const cards  = await getAll(db, 'cards');
+
+    if (!states.length) {
+      setStatus('No hay tarjetas en esta IndexedDB. ¿Estás en el dispositivo/navegador correcto?');
+      btn.disabled = false;
+      return;
+    }
+
+    const cardMap = {};
+    cards.forEach(c => { cardMap[c.id] = c.keyword; });
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    // ── Backup — mismo formato que anki-state.json real ──
+    const backupCards = {};
+    for (const s of states) {
+      backupCards[s.id] = { interval: s.interval, easeFactor: s.easeFactor, dueDate: s.dueDate, repetitions: s.repetitions, lapses: s.lapses };
+    }
+    const backupUrl = download(
+      { meta: { exportedAt: new Date().toISOString(), deckVersion: 1, source: 'IndexedDB local — backup pre-migración FSRS' }, cards: backupCards },
+      `anki-state-backup-sm2-${today}.json`
+    );
+
+    // ── Dry-run de la migración — misma heurística que migrateCardStateToFSRS() ──
+    const State = { New: 0, Learning: 1, Review: 2, Relearning: 3 };
+    const preview = states.map(s => {
+      const isNew = s.repetitions === 0;
+      return {
+        id: s.id,
+        keyword: cardMap[s.id] || s.id,
+        before: { interval: s.interval, repetitions: s.repetitions, lapses: s.lapses, easeFactor: s.easeFactor, dueDate: s.dueDate },
+        after: {
+          state: isNew ? State.New : State.Review,
+          stateLabel: isNew ? 'New' : 'Review',
+          due: isNew ? new Date().toISOString() : new Date(s.dueDate + 'T00:00:00').toISOString(),
+          stability: isNew ? 0 : Math.max(s.interval, 0.1),
+          difficulty: isNew ? 0 : 5,
+          reps: s.repetitions || 0,
+          lapses: s.lapses || 0,
+        },
+      };
+    });
+    const previewUrl = download(
+      { generatedAt: new Date().toISOString(), totalCards: preview.length, note: 'DRY RUN — nada de esto fue escrito en IndexedDB.', preview },
+      `fsrs-migration-preview-${today}.json`
+    );
+
+    // ── Caso "architettura": repetitions=0 con lapses>0 — migra como New, pierde la señal de dificultad ──
+    const atRisk = preview.filter(p => p.before.repetitions === 0 && p.before.lapses > 0);
+
+    // ── Muestra: alto progreso, muchos lapses, casi nuevas ──
+    const byInterval = [...preview].sort((a, b) => b.before.interval - a.before.interval).slice(0, 3);
+    const byLapses    = [...preview].sort((a, b) => b.before.lapses - a.before.lapses).slice(0, 3);
+    const nearNew     = preview.filter(p => p.before.repetitions <= 1).slice(0, 4);
+    const seen = new Set();
+    const sample = [...byInterval, ...byLapses, ...nearNew].filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+
+    // ── Render ──
+    document.getElementById('stat-total').textContent = states.length;
+    document.getElementById('stat-atrisk').textContent = atRisk.length;
+
+    document.getElementById('dl-links').innerHTML = `
+      <a href="${backupUrl}" download="anki-state-backup-sm2-${today}.json">⬇ anki-state-backup-sm2-${today}.json (backup)</a>
+      <a href="${previewUrl}" download="fsrs-migration-preview-${today}.json">⬇ fsrs-migration-preview-${today}.json (preview completo)</a>
+    `;
+
+    const table = document.getElementById('sample-table');
+    table.innerHTML = `
+      <tr>
+        <th>Palabra</th><th>int.</th><th>rep.</th><th>laps.</th>
+        <th>→ estado</th><th>→ estab.</th><th>→ dific.</th><th>→ due</th>
+      </tr>
+      ${sample.map(s => `
+        <tr>
+          <td>${s.keyword}</td>
+          <td>${s.before.interval}</td>
+          <td>${s.before.repetitions}</td>
+          <td>${s.before.lapses}</td>
+          <td class="${s.after.stateLabel === 'New' ? 'after-new' : 'after-review'}">${s.after.stateLabel}</td>
+          <td>${s.after.stability}</td>
+          <td>${s.after.difficulty}</td>
+          <td>${s.after.due.slice(0, 10)}</td>
+        </tr>`).join('')}
+    `;
+
+    document.getElementById('result').style.display = 'block';
+    setStatus(`Listo — ${states.length} tarjetas procesadas, nada fue escrito en IndexedDB.`);
+  } catch (err) {
+    setStatus('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
