@@ -1684,7 +1684,8 @@ async function buildSessionQueue() {
 
 const ReviewSession = {
   queue:            [],   // ids restantes de la mezcla New/Review pre-armada
-  learningWatch:    [],   // [{id, due}] — Learning/Relearning aún no vencidas, se vigilan para interrumpir
+  learningWatch:    [],   // [{id, due}] — Learning/Relearning, vencidas o no — se vigilan para interrumpir o servir en fallback
+  lastShownId:      null, // anti-repetición: id de la última tarjeta mostrada
   current:          null,
   flipped:          false,
   reviewed:         [],   // { id, keyword, rating } — última calificación por tarjeta
@@ -1694,23 +1695,58 @@ const ReviewSession = {
 };
 window.ReviewSession = ReviewSession;
 
-function getNextCardId() {
+// Encuentra el mejor candidato a mostrar, con prioridad Regla 1 > Regla 2 > Regla 3.
+// excludeId permite pedir "el mejor candidato que NO sea este id" (usado por el filtro anti-repetición).
+function findBestCandidate(excludeId) {
   const now = new Date();
-  // Regla 1 — Learning/Relearning vencidas interrumpen siempre, sin excepción.
+
+  // Regla 1 — Learning/Relearning vencidas (due <= now) interrumpen siempre; la más próxima primero.
+  let dueIdx = -1, dueDue = null;
+  for (let i = 0; i < ReviewSession.learningWatch.length; i++) {
+    const w = ReviewSession.learningWatch[i];
+    if (excludeId != null && w.id === excludeId) continue;
+    if (w.due <= now && (dueDue === null || w.due < dueDue)) { dueIdx = i; dueDue = w.due; }
+  }
+  if (dueIdx >= 0) return { source: 'watch', idx: dueIdx };
+
+  // Regla 2 — mezcla New/Review pre-armada (shuffle), solo si no hay vencidas.
+  const qIdx = ReviewSession.queue.findIndex(id => excludeId == null || id !== excludeId);
+  if (qIdx >= 0) return { source: 'queue', idx: qIdx };
+
+  // Regla 3 — cola vacía y sin vencidas: servir la de learningWatch con due más próximo
+  // aunque todavía no haya llegado su hora (sesión fluida, sin esperar tiempo real).
   let earliestIdx = -1, earliestDue = null;
   for (let i = 0; i < ReviewSession.learningWatch.length; i++) {
     const w = ReviewSession.learningWatch[i];
-    if (w.due <= now && (earliestDue === null || w.due < earliestDue)) {
-      earliestIdx = i; earliestDue = w.due;
-    }
+    if (excludeId != null && w.id === excludeId) continue;
+    if (earliestDue === null || w.due < earliestDue) { earliestIdx = i; earliestDue = w.due; }
   }
-  if (earliestIdx >= 0) {
-    const [w] = ReviewSession.learningWatch.splice(earliestIdx, 1);
+  if (earliestIdx >= 0) return { source: 'watch', idx: earliestIdx };
+
+  return null;
+}
+
+function getNextCardId() {
+  let pick = findBestCandidate(null);
+  if (!pick) return null; // fin real: nada en queue ni en learningWatch
+
+  const pickedId = pick.source === 'watch'
+    ? ReviewSession.learningWatch[pick.idx].id
+    : ReviewSession.queue[pick.idx];
+
+  // Filtro anti-repetición: no mostrar la misma tarjeta dos veces seguidas si hay otra disponible
+  // en queue o learningWatch. Si no hay ninguna alternativa, se repite (única tarjeta restante).
+  if (pickedId === ReviewSession.lastShownId) {
+    const alt = findBestCandidate(ReviewSession.lastShownId);
+    if (alt) pick = alt;
+  }
+
+  if (pick.source === 'watch') {
+    const [w] = ReviewSession.learningWatch.splice(pick.idx, 1);
     return w.id;
   }
-  // Regla 2 — mezcla New/Review pre-armada (shuffle), fuera de la regla 1.
-  if (ReviewSession.queue.length) return ReviewSession.queue.shift();
-  return null;
+  const [id] = ReviewSession.queue.splice(pick.idx, 1);
+  return id;
 }
 
 function renderNewCounter() {
@@ -1731,6 +1767,7 @@ async function startSession() {
 
   ReviewSession.queue         = ordered;
   ReviewSession.learningWatch = learningWatch;
+  ReviewSession.lastShownId   = null;
   ReviewSession.reviewed      = [];
   ReviewSession.done          = false;
   ReviewSession.originalTotal = ordered.length + learningWatch.length;
@@ -1750,8 +1787,9 @@ async function advanceToNextOrEnd() {
 async function loadCard(id) {
   const card = await dbGet('cards', id);
   if (!card) { await advanceToNextOrEnd(); return; }
-  ReviewSession.current = card;
-  ReviewSession.flipped = false;
+  ReviewSession.current      = card;
+  ReviewSession.flipped       = false;
+  ReviewSession.lastShownId   = id;
   ReviewSession.cardLookup[id] = { keyword: card.keyword, translation: card.translation };
   renderCardFront(card);
 }
